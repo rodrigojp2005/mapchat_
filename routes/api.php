@@ -25,6 +25,42 @@ Route::get('/test', function () {
     return response()->json(['status' => 'API funcionando!', 'time' => now()]);
 });
 
+// Rota de diagnóstico completo
+Route::get('/debug', function () {
+    try {
+        $questionCount = \App\Models\Question::count();
+        $userCount = \App\Models\User::count();
+        $firstQuestion = \App\Models\Question::first();
+        
+        return response()->json([
+            'status' => 'DEBUG OK',
+            'database' => [
+                'questions_count' => $questionCount,
+                'users_count' => $userCount,
+                'first_question' => $firstQuestion ? [
+                    'id' => $firstQuestion->id,
+                    'text' => substr($firstQuestion->question_text, 0, 50) . '...',
+                ] : null
+            ],
+            'server' => [
+                'php_version' => PHP_VERSION,
+                'laravel_version' => app()->version(),
+                'environment' => config('app.env'),
+                'debug' => config('app.debug'),
+                'database_default' => config('database.default'),
+            ],
+            'timestamp' => now()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'ERROR',
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+});
+
 // Rotas das perguntas
 Route::get('/question/random', [QuestionController::class, 'random']);
 Route::post('/question/guess', [QuestionController::class, 'guess']);

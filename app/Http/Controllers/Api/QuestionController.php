@@ -13,14 +13,40 @@ class QuestionController extends Controller
     // Retorna uma pergunta aleatória
     public function random()
     {
+        // Log detalhado para debug
+        \Log::info('[MapChat API] Iniciando busca por pergunta aleatória');
+        
         try {
+            // Verificar conexão com banco
+            $questionCount = Question::count();
+            \Log::info("[MapChat API] Total de perguntas no banco: {$questionCount}");
+            
+            if ($questionCount == 0) {
+                \Log::warning('[MapChat API] Nenhuma pergunta encontrada no banco');
+                return response()->json([
+                    'error' => 'Nenhuma pergunta disponível no banco de dados.',
+                    'debug' => [
+                        'question_count' => $questionCount,
+                        'timestamp' => now()
+                    ]
+                ], 404);
+            }
+            
             $question = Question::inRandomOrder()->first();
+            \Log::info("[MapChat API] Pergunta selecionada: ID {$question->id}");
             
             if (!$question) {
-                return response()->json(['error' => 'Nenhuma pergunta disponível.'], 404);
+                \Log::error('[MapChat API] Erro: pergunta é null após busca');
+                return response()->json([
+                    'error' => 'Erro interno: pergunta não encontrada.',
+                    'debug' => [
+                        'question_count' => $questionCount,
+                        'timestamp' => now()
+                    ]
+                ], 404);
             }
 
-            return response()->json([
+            $response = [
                 'id' => $question->id,
                 'question_text' => $question->question_text,
                 'category' => $question->category,
@@ -29,9 +55,33 @@ class QuestionController extends Controller
                 'answer_lng' => (float) $question->answer_lng,
                 'user_id' => $question->user_id,
                 'user_name' => $question->user ? $question->user->name : 'anônimo',
-            ]);
+                'debug' => [
+                    'mode' => 'api',
+                    'timestamp' => now(),
+                    'server_info' => [
+                        'php_version' => PHP_VERSION,
+                        'laravel_version' => app()->version()
+                    ]
+                ]
+            ];
+            
+            \Log::info('[MapChat API] Resposta preparada com sucesso');
+            
+            return response()->json($response);
+            
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Erro ao buscar pergunta: ' . $e->getMessage()], 500);
+            \Log::error('[MapChat API] Erro ao buscar pergunta: ' . $e->getMessage());
+            \Log::error('[MapChat API] Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'error' => 'Erro ao buscar pergunta: ' . $e->getMessage(),
+                'debug' => [
+                    'exception_class' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'timestamp' => now()
+                ]
+            ], 500);
         }
     }
     // Valida o palpite do usuário

@@ -4,7 +4,11 @@ let attempts = 0;
 let maxAttempts = 5;
 let gameMode = 'api'; // 'api' ou 'offline'
 
-console.log('%c[MapChat] JS carregado - Versão Robusta', 'color: green; font-weight: bold;', new Date().toLocaleString());
+console.log('%c[MapChat] 🚀 JAVASCRIPT CARREGADO - VERSÃO ULTRA DEBUG', 'color: green; font-size: 18px; font-weight: bold;');
+console.log('%c[MapChat] 📅 Carregado em:', 'color: green; font-weight: bold;', new Date().toLocaleString());
+console.log('%c[MapChat] 🌍 URL da página:', 'color: blue;', window.location.href);
+console.log('%c[MapChat] 🔧 User Agent:', 'color: blue;', navigator.userAgent);
+console.log('%c[MapChat] 📱 Viewport:', 'color: blue;', `${window.innerWidth}x${window.innerHeight}`);
 
 // Perguntas offline (backup caso API falhe)
 const offlineQuestions = [
@@ -94,30 +98,48 @@ let usedQuestions = [];
 
 // Inicializar Google Maps
 function initMap() {
-    console.log('%c[MapChat] Inicializando mapa', 'color: blue;');
+    console.log('%c[MapChat] 🗺️ INICIALIZANDO GOOGLE MAPS', 'color: blue; font-size: 16px; font-weight: bold;');
+    console.log('[MapChat] 📍 Centro do mapa: Brasil (-14.2350, -51.9253)');
     
-    map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 5,
-        center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
-        mapTypeId: 'terrain'
-    });
+    try {
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 5,
+            center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
+            mapTypeId: 'terrain'
+        });
 
-    // Adicionar listener para cliques no mapa
-    map.addListener('click', function(e) {
-        makeGuess(e.latLng.lat(), e.latLng.lng());
-    });
+        console.log('%c[MapChat] ✅ MAPA CRIADO COM SUCESSO', 'color: green;');
 
-    // Carregar primeira pergunta
-    loadNewQuestion();
+        // Adicionar listener para cliques no mapa
+        map.addListener('click', function(e) {
+            console.log('[MapChat] 🎯 CLIQUE NO MAPA:', e.latLng.lat(), e.latLng.lng());
+            makeGuess(e.latLng.lat(), e.latLng.lng());
+        });
+
+        console.log('[MapChat] 👂 Listener de clique adicionado');
+
+        // Carregar primeira pergunta
+        console.log('%c[MapChat] 🚀 CARREGANDO PRIMEIRA PERGUNTA...', 'color: blue;');
+        loadNewQuestion();
+    } catch (error) {
+        console.error('%c[MapChat] ❌ ERRO AO INICIALIZAR MAPA:', 'color: red; font-size: 16px;', error);
+    }
 }
 
 // Carregar nova pergunta (com fallback)
 async function loadNewQuestion() {
-    console.log('%c[MapChat] Carregando nova pergunta...', 'color: orange;');
+    console.log('%c[MapChat] 🔄 INICIANDO CARREGAMENTO DE PERGUNTA', 'color: orange; font-size: 14px; font-weight: bold;');
+    console.log('[MapChat] 📍 URL base:', window.location.origin);
+    console.log('[MapChat] 🌐 URL da API:', window.location.origin + '/api/question/random');
     
     try {
+        console.log('%c[MapChat] 🚀 TENTANDO API...', 'color: blue;');
+        
         // Tentar API primeiro
-        const response = await fetch('/api/question/random', {
+        const apiUrl = '/api/question/random';
+        console.log('[MapChat] 📡 Fazendo fetch para:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -125,37 +147,75 @@ async function loadNewQuestion() {
             }
         });
 
+        console.log('[MapChat] 📨 Response recebida:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
+        });
+
         if (response.ok) {
-            const data = await response.json();
-            currentQuestion = data;
-            gameMode = 'api';
-            console.log('%c[MapChat] Pergunta carregada via API', 'color: green;');
+            console.log('%c[MapChat] ✅ RESPONSE OK - Parseando JSON...', 'color: green;');
+            
+            const responseText = await response.text();
+            console.log('[MapChat] 📄 Response raw text:', responseText);
+            
+            try {
+                const data = JSON.parse(responseText);
+                console.log('%c[MapChat] 🎯 JSON PARSEADO COM SUCESSO:', 'color: green; font-weight: bold;', data);
+                
+                currentQuestion = data;
+                gameMode = 'api';
+                console.log('%c[MapChat] ✅ PERGUNTA CARREGADA VIA API', 'color: green; font-size: 14px;');
+            } catch (jsonError) {
+                console.error('%c[MapChat] ❌ ERRO AO PARSEAR JSON:', 'color: red;', jsonError);
+                console.error('[MapChat] 📄 Response que causou erro:', responseText);
+                throw new Error(`Erro JSON: ${jsonError.message}`);
+            }
         } else {
-            throw new Error(`API retornou erro: ${response.status}`);
+            console.error('%c[MapChat] ❌ API RETORNOU ERRO:', 'color: red;', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('[MapChat] 📄 Erro detalhado:', errorText);
+            throw new Error(`API retornou erro: ${response.status} - ${response.statusText}`);
         }
     } catch (error) {
-        console.warn('%c[MapChat] API falhou, usando modo offline', 'color: orange;', error);
+        console.error('%c[MapChat] 💥 ERRO NA API - DETALHES:', 'color: red; font-size: 14px;', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        console.warn('%c[MapChat] 🔄 FALLBACK: Carregando modo offline...', 'color: orange; font-size: 14px;');
+        
         // Fallback para modo offline
         loadOfflineQuestion();
     }
 
     if (currentQuestion) {
+        console.log('%c[MapChat] 📝 ATUALIZANDO DISPLAY COM PERGUNTA:', 'color: blue;', currentQuestion);
         updateQuestionDisplay();
         resetAttempts();
         resetTimer();
         clearMap();
+    } else {
+        console.error('%c[MapChat] ❌ NENHUMA PERGUNTA CARREGADA!', 'color: red; font-size: 16px;');
     }
 }
 
 // Carregar pergunta offline
 function loadOfflineQuestion() {
+    console.log('%c[MapChat] 📱 CARREGANDO PERGUNTA OFFLINE', 'color: purple; font-size: 14px;');
+    console.log('[MapChat] 📊 Perguntas usadas:', usedQuestions);
+    console.log('[MapChat] 📝 Total de perguntas offline:', offlineQuestions.length);
+    
     // Resetar perguntas usadas se todas foram utilizadas
     if (usedQuestions.length >= offlineQuestions.length) {
+        console.log('[MapChat] 🔄 Resetando perguntas usadas - todas foram utilizadas');
         usedQuestions = [];
     }
 
     // Filtrar perguntas não utilizadas
     const availableQuestions = offlineQuestions.filter(q => !usedQuestions.includes(q.id));
+    console.log('[MapChat] 📋 Perguntas disponíveis:', availableQuestions.length);
     
     // Selecionar pergunta aleatória
     const randomIndex = Math.floor(Math.random() * availableQuestions.length);
@@ -163,75 +223,158 @@ function loadOfflineQuestion() {
     usedQuestions.push(currentQuestion.id);
     
     gameMode = 'offline';
-    console.log('%c[MapChat] Pergunta carregada offline', 'color: green;', currentQuestion);
+    console.log('%c[MapChat] ✅ PERGUNTA OFFLINE CARREGADA:', 'color: green; font-weight: bold;', {
+        id: currentQuestion.id,
+        texto: currentQuestion.question_text,
+        categoria: currentQuestion.category
+    });
 }
 
 // Atualizar display da pergunta
 function updateQuestionDisplay() {
-    if (!currentQuestion) return;
+    console.log('%c[MapChat] 📝 ATUALIZANDO DISPLAY', 'color: blue;');
+    console.log('[MapChat] ❓ Pergunta para exibir:', currentQuestion);
     
-    document.getElementById('question-text').textContent = currentQuestion.question_text;
-    document.getElementById('category').textContent = currentQuestion.category || 'Geografia';
+    if (!currentQuestion) {
+        console.error('[MapChat] ❌ Nenhuma pergunta para exibir!');
+        return;
+    }
+    
+    const questionElement = document.getElementById('question-text');
+    const categoryElement = document.getElementById('category');
+    
+    console.log('[MapChat] 🎯 Elementos DOM:', {
+        questionElement: !!questionElement,
+        categoryElement: !!categoryElement
+    });
+    
+    if (questionElement) {
+        questionElement.textContent = currentQuestion.question_text;
+        console.log('[MapChat] ✅ Texto da pergunta atualizado');
+    } else {
+        console.error('[MapChat] ❌ Elemento question-text não encontrado!');
+    }
+    
+    if (categoryElement) {
+        categoryElement.textContent = currentQuestion.category || 'Geografia';
+        console.log('[MapChat] ✅ Categoria atualizada');
+    } else {
+        console.error('[MapChat] ❌ Elemento category não encontrado!');
+    }
     
     // Mostrar indicador do modo
     const modeIndicator = gameMode === 'api' ? '🌐 Online' : '📱 Offline';
+    console.log('[MapChat] 🔧 Modo do jogo:', modeIndicator);
+    
     const modeElement = document.getElementById('game-mode');
     if (modeElement) {
         modeElement.textContent = modeIndicator;
+        console.log('[MapChat] ✅ Indicador de modo atualizado');
     } else {
         // Criar elemento se não existir
+        console.log('[MapChat] 🔧 Criando elemento de modo...');
         const newModeElement = document.createElement('div');
         newModeElement.id = 'game-mode';
         newModeElement.className = 'text-xs text-gray-500 mt-2';
         newModeElement.textContent = modeIndicator;
-        document.getElementById('question-container').appendChild(newModeElement);
+        
+        const container = document.getElementById('question-container');
+        if (container) {
+            container.appendChild(newModeElement);
+            console.log('[MapChat] ✅ Elemento de modo criado e adicionado');
+        } else {
+            console.error('[MapChat] ❌ Container question-container não encontrado!');
+        }
     }
 }
 
 // Fazer palpite
 async function makeGuess(lat, lng) {
-    if (!currentQuestion) return;
+    console.log('%c[MapChat] 🎯 FAZENDO PALPITE', 'color: orange; font-size: 14px;');
+    console.log('[MapChat] 📍 Coordenadas do palpite:', { lat, lng });
+    console.log('[MapChat] ❓ Pergunta atual:', currentQuestion);
+    
+    if (!currentQuestion) {
+        console.error('%c[MapChat] ❌ NENHUMA PERGUNTA ATUAL!', 'color: red;');
+        return;
+    }
 
     attempts++;
+    console.log('[MapChat] 🔢 Tentativa:', attempts, '/', maxAttempts);
     updateAttemptsDisplay();
 
     let result;
     
     if (gameMode === 'api') {
+        console.log('%c[MapChat] 🌐 TENTANDO PALPITE VIA API...', 'color: blue;');
         try {
             result = await makeApiGuess(lat, lng);
+            console.log('%c[MapChat] ✅ RESULTADO API:', 'color: green;', result);
         } catch (error) {
-            console.warn('%c[MapChat] API guess falhou, calculando offline', 'color: orange;', error);
+            console.error('%c[MapChat] ❌ API GUESS FALHOU:', 'color: red;', error);
+            console.warn('%c[MapChat] 🔄 CALCULANDO OFFLINE...', 'color: orange;');
             result = makeOfflineGuess(lat, lng);
         }
     } else {
+        console.log('%c[MapChat] 📱 CALCULANDO PALPITE OFFLINE...', 'color: purple;');
         result = makeOfflineGuess(lat, lng);
     }
 
+    console.log('%c[MapChat] 🎯 RESULTADO FINAL:', 'color: blue; font-weight: bold;', result);
     processGuessResult(result, lat, lng);
 }
 
 // Fazer palpite via API
 async function makeApiGuess(lat, lng) {
+    console.log('%c[MapChat] 🌐 FAZENDO PALPITE VIA API', 'color: blue;');
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    console.log('[MapChat] 🔑 CSRF Token elemento:', csrfToken);
+    console.log('[MapChat] 🔑 CSRF Token valor:', csrfToken ? csrfToken.getAttribute('content') : 'NÃO ENCONTRADO');
+    
+    const payload = {
+        question_id: currentQuestion.id,
+        lat: lat,
+        lng: lng
+    };
+    console.log('[MapChat] 📦 Payload do palpite:', payload);
+    
+    const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRF-TOKEN'] = csrfToken.getAttribute('content');
+    }
+    
+    console.log('[MapChat] 📨 Headers da requisição:', headers);
+    
     const response = await fetch('/api/question/guess', {
         method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-            question_id: currentQuestion.id,
-            lat: lat,
-            lng: lng
-        })
+        headers: headers,
+        body: JSON.stringify(payload)
+    });
+
+    console.log('[MapChat] 📨 Response do palpite:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
     });
 
     if (!response.ok) {
-        throw new Error(`API erro: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[MapChat] ❌ Erro da API guess:', errorText);
+        throw new Error(`API erro: ${response.status} - ${errorText}`);
     }
 
-    return await response.json();
+    const responseText = await response.text();
+    console.log('[MapChat] 📄 Response text:', responseText);
+    
+    const result = JSON.parse(responseText);
+    console.log('[MapChat] ✅ Resultado parseado:', result);
+    
+    return result;
 }
 
 // Fazer palpite offline
@@ -378,8 +521,29 @@ function zoomOut() {
 
 // Inicializar quando a página carregar
 window.onload = function() {
-    console.log('%c[MapChat] Página carregada, aguardando Google Maps...', 'color: blue;');
+    console.log('%c[MapChat] 📄 PÁGINA CARREGADA COMPLETAMENTE', 'color: blue; font-size: 16px;');
+    console.log('[MapChat] ⏰ Timestamp:', new Date().toISOString());
+    console.log('[MapChat] 🗺️ Aguardando Google Maps carregar...');
 };
 
 // Função global para Google Maps callback
 window.initMap = initMap;
+
+// Log quando DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('%c[MapChat] 🏗️ DOM PRONTO', 'color: green; font-size: 16px;');
+    
+    // Verificar elementos importantes
+    const mapElement = document.getElementById('map');
+    const questionElement = document.getElementById('question-text');
+    const categoryElement = document.getElementById('category');
+    
+    console.log('[MapChat] 🧩 Elementos DOM encontrados:', {
+        map: !!mapElement,
+        questionText: !!questionElement,
+        category: !!categoryElement,
+        mapDimensions: mapElement ? `${mapElement.offsetWidth}x${mapElement.offsetHeight}` : 'N/A'
+    });
+});
+
+console.log('%c[MapChat] 📜 FINAL DO SCRIPT ALCANÇADO', 'color: purple; font-size: 14px;');
