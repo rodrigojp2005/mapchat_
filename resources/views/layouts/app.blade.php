@@ -102,10 +102,17 @@
         <script>
             let timerInterval;
             let currentTime = 30; // 30 segundos por pergunta
+            let timerRunning = false; // Flag para evitar múltiplos timers
             
             function startTimer() {
-                console.log('%c[Timer] Iniciando cronômetro', 'color: red;');
+                // Parar timer existente antes de iniciar novo
+                if (timerRunning) {
+                    clearInterval(timerInterval);
+                }
+                
+                console.log('%c[Timer] ⏰ Iniciando cronômetro', 'color: red; font-weight: bold;');
                 currentTime = 30;
+                timerRunning = true;
                 showTimer();
                 updateTimerDisplay();
                 
@@ -124,8 +131,11 @@
             }
             
             function stopTimer() {
-                console.log('%c[Timer] Parando cronômetro', 'color: red;');
+                if (!timerRunning) return; // Evitar parar timer já parado
+                
+                console.log('%c[Timer] ⏹️ Parando cronômetro', 'color: red; font-weight: bold;');
                 clearInterval(timerInterval);
+                timerRunning = false;
                 hideTimer();
             }
             

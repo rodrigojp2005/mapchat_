@@ -132,18 +132,16 @@ function initMap() {
 
 // Carregar nova pergunta (com fallback)
 async function loadNewQuestion() {
-    console.log('%c[MapChat] 🔄 INICIANDO CARREGAMENTO DE PERGUNTA', 'color: orange; font-size: 14px; font-weight: bold;');
-    console.log('[MapChat] 📍 URL base:', window.location.origin);
-    console.log('[MapChat] 🌐 URL da API:', window.location.origin + '/api/question/random');
+    console.log('%c[MapChat] 🔄 CARREGANDO NOVA PERGUNTA...', 'color: orange; font-size: 16px; font-weight: bold;');
+    
+    // LIMPAR MAPA PRIMEIRO (antes de tudo)
+    clearMap();
     
     try {
-        console.log('%c[MapChat] 🚀 TENTANDO API...', 'color: blue;');
+        console.log('%c[MapChat] 🌐 Tentando carregar via API...', 'color: blue;');
         
         // Tentar API primeiro
-        const apiUrl = '/api/question/random';
-        console.log('[MapChat] 📡 Fazendo fetch para:', apiUrl);
-        
-        const response = await fetch(apiUrl, {
+        const response = await fetch('/api/question/random', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -151,45 +149,19 @@ async function loadNewQuestion() {
             }
         });
 
-        console.log('[MapChat] 📨 Response recebida:', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries())
-        });
+        console.log('%c[MapChat] � Resposta da API:', 'color: blue;', response.status, response.statusText);
 
         if (response.ok) {
-            console.log('%c[MapChat] ✅ RESPONSE OK - Parseando JSON...', 'color: green;');
-            
-            const responseText = await response.text();
-            console.log('[MapChat] 📄 Response raw text:', responseText);
-            
-            try {
-                const data = JSON.parse(responseText);
-                console.log('%c[MapChat] 🎯 JSON PARSEADO COM SUCESSO:', 'color: green; font-weight: bold;', data);
-                
-                currentQuestion = data;
-                gameMode = 'api';
-                console.log('%c[MapChat] ✅ PERGUNTA CARREGADA VIA API', 'color: green; font-size: 14px;');
-            } catch (jsonError) {
-                console.error('%c[MapChat] ❌ ERRO AO PARSEAR JSON:', 'color: red;', jsonError);
-                console.error('[MapChat] 📄 Response que causou erro:', responseText);
-                throw new Error(`Erro JSON: ${jsonError.message}`);
-            }
+            const data = await response.json();
+            console.log('%c[MapChat] � Dados recebidos da API:', 'color: green;', data);
+            currentQuestion = data;
+            gameMode = 'api';
+            console.log('%c[MapChat] ✅ Pergunta carregada via API', 'color: green; font-weight: bold;');
         } else {
-            console.error('%c[MapChat] ❌ API RETORNOU ERRO:', 'color: red;', response.status, response.statusText);
-            const errorText = await response.text();
-            console.error('[MapChat] 📄 Erro detalhado:', errorText);
-            throw new Error(`API retornou erro: ${response.status} - ${response.statusText}`);
+            throw new Error(`API retornou erro: ${response.status}`);
         }
     } catch (error) {
-        console.error('%c[MapChat] 💥 ERRO NA API - DETALHES:', 'color: red; font-size: 14px;', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
-        console.warn('%c[MapChat] 🔄 FALLBACK: Carregando modo offline...', 'color: orange; font-size: 14px;');
-        
+        console.warn('%c[MapChat] ⚠️ API falhou, usando modo offline', 'color: orange; font-weight: bold;', error);
         // Fallback para modo offline
         loadOfflineQuestion();
     }
@@ -199,7 +171,7 @@ async function loadNewQuestion() {
         updateQuestionDisplay();
         resetAttempts();
         resetTimer();
-        clearMap();
+        // NÃO clearMap aqui - já foi feito no início
     } else {
         console.error('%c[MapChat] ❌ NENHUMA PERGUNTA CARREGADA!', 'color: red; font-size: 16px;');
     }
@@ -484,7 +456,8 @@ function getDirection(lat1, lon1, lat2, lon2) {
 
 // Funções auxiliares (reutilizadas do código original)
 function addMarker(lat, lng, isCorrect, title = '') {
-    console.log('%c[MapChat] 📍 Adicionando marcador:', 'color: purple;', {lat, lng, isCorrect, title});
+    console.log('%c[MapChat] 📍 ADICIONANDO MARCADOR:', 'color: purple; font-weight: bold;', {lat, lng, isCorrect, title});
+    console.log('%c[MapChat] 📍 Marcadores ANTES de adicionar:', 'color: purple;', markers.length);
     
     const marker = new google.maps.Marker({
         position: { lat: lat, lng: lng },
@@ -497,20 +470,44 @@ function addMarker(lat, lng, isCorrect, title = '') {
     
     // Adicionar à lista de marcadores para controle
     markers.push(marker);
-    console.log('%c[MapChat] 📍 Total de marcadores no mapa:', 'color: purple;', markers.length);
+    console.log('%c[MapChat] 📍 Marcador criado e adicionado ao array', 'color: purple;');
+    console.log('%c[MapChat] 📍 Total de marcadores APÓS adicionar:', 'color: purple; font-weight: bold;', markers.length);
+    
+    // Mostrar todos os marcadores atuais
+    console.log('%c[MapChat] 📍 Lista completa de marcadores:', 'color: purple;', markers.map((m, i) => ({
+        index: i,
+        position: m.getPosition() ? m.getPosition().toString() : 'null',
+        map: m.getMap() ? 'visível' : 'removido'
+    })));
 }
 
 function clearMap() {
-    console.log('%c[MapChat] 🧹 Limpando mapa - Marcadores atuais:', 'color: orange;', markers.length);
+    console.log('%c[MapChat] 🧹 LIMPANDO MAPA - INÍCIO', 'color: orange; font-weight: bold;');
+    console.log('%c[MapChat] 🧹 Marcadores para remover:', 'color: orange; font-weight: bold;', markers.length);
+    
+    if (markers.length === 0) {
+        console.log('%c[MapChat] 🧹 Nenhum marcador para remover', 'color: orange;');
+        return;
+    }
     
     // Limpar todos os marcadores
     markers.forEach((marker, index) => {
-        console.log('%c[MapChat] 🧹 Removendo marcador', 'color: orange;', index + 1);
-        marker.setMap(null);
+        console.log('%c[MapChat] 🧹 Removendo marcador', 'color: orange;', index + 1, 'de', markers.length);
+        if (marker && typeof marker.setMap === 'function') {
+            marker.setMap(null);
+            console.log('%c[MapChat] ✅ Marcador', index + 1, 'removido com sucesso', 'color: green;');
+        } else {
+            console.error('%c[MapChat] ❌ Marcador', index + 1, 'inválido:', 'color: red;', marker);
+        }
     });
-    markers = [];
     
-    console.log('%c[MapChat] ✅ Mapa limpo - Marcadores restantes:', 'color: green;', markers.length);
+    // Resetar array
+    const oldLength = markers.length;
+    markers.length = 0; // Limpar array
+    markers.splice(0); // Garantir limpeza
+    
+    console.log('%c[MapChat] 🧹 Array limpo - Antes:', oldLength, 'Agora:', markers.length, 'color: orange; font-weight: bold;');
+    console.log('%c[MapChat] ✅ MAPA LIMPO COMPLETAMENTE', 'color: green; font-weight: bold;');
 }
 
 function resetAttempts() {
@@ -531,24 +528,26 @@ function updateAttemptsDisplay() {
 }
 
 function resetTimer() {
-    console.log('%c[MapChat] ⏰ Reset do timer solicitado', 'color: blue;');
+    console.log('%c[MapChat] ⏰ RESET TIMER solicitado', 'color: blue; font-weight: bold;');
+    
     // Resetar timer na navegação
     if (typeof startTimer === 'function') {
         startTimer();
-        console.log('%c[MapChat] ✅ Timer iniciado', 'color: green;');
+        console.log('%c[MapChat] ✅ Timer iniciado com sucesso', 'color: green;');
     } else {
-        console.warn('%c[MapChat] ⚠️ Função startTimer não encontrada', 'color: orange;');
+        console.error('%c[MapChat] ❌ Função startTimer não encontrada', 'color: red;');
     }
 }
 
 function hideTimer() {
-    console.log('%c[MapChat] ⏰ Ocultando timer', 'color: blue;');
+    console.log('%c[MapChat] ⏰ HIDE TIMER solicitado', 'color: blue; font-weight: bold;');
+    
     // Parar timer na navegação
     if (typeof stopTimer === 'function') {
         stopTimer();
-        console.log('%c[MapChat] ✅ Timer parado', 'color: green;');
+        console.log('%c[MapChat] ✅ Timer parado com sucesso', 'color: green;');
     } else {
-        console.warn('%c[MapChat] ⚠️ Função stopTimer não encontrada', 'color: orange;');
+        console.error('%c[MapChat] ❌ Função stopTimer não encontrada', 'color: red;');
     }
 }
 
