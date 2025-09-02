@@ -8,9 +8,14 @@
             <div id="map" class="w-full h-full"></div>
         </div>
         <div id="questionBalloon" class="absolute left-1/2 top-24 md:top-20 transform -translate-x-1/2 z-30 w-11/12 max-w-md bg-white rounded-xl shadow-xl border border-blue-200 p-4 flex flex-col gap-2">
-            <div class="font-semibold text-lg text-blue-700 mb-1" id="questionText">Carregando pergunta...</div>
+            <div id="question-container">
+                <div class="font-semibold text-lg text-blue-700 mb-1" id="question-text">Carregando pergunta...</div>
+                <div class="text-sm text-gray-500 mb-2" id="category">Geografia</div>
+            </div>
             <div class="flex justify-between text-sm text-gray-600 mt-1">
-                <span id="attemptsDisplay" class="font-mono font-bold text-orange-600">🎯 5 tentativas</span>
+                <span id="attemptsDisplay" class="font-mono font-bold text-orange-600">
+                    🎯 <span id="attempts-count">0</span>/<span id="max-attempts">5</span> tentativas
+                </span>
                 <span id="hint" class="ml-2 hidden text-blue-600"></span>
             </div>
         </div>
@@ -23,7 +28,7 @@
 @push('scripts')
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/js/welcome.js"></script>
+<script src="/js/welcome-robust.js"></script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBzEzusC_k3oEoPnqynq2N4a0aA3arzH-c&callback=initMap"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -19,6 +19,12 @@ use App\Http\Controllers\Api\QuestionController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-    // Extra closing brace removed
+
+// Rota de teste
+Route::get('/test', function () {
+    return response()->json(['status' => 'API funcionando!', 'time' => now()]);
+});
+
+// Rotas das perguntas
 Route::get('/question/random', [QuestionController::class, 'random']);
 Route::post('/question/guess', [QuestionController::class, 'guess']);
