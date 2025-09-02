@@ -109,32 +109,25 @@ let usedQuestions = [];
 
 // Inicializar Google Maps
 function initMap() {
-    console.log('%c[MapChat] 🗺️ INICIALIZANDO GOOGLE MAPS', 'color: blue; font-size: 16px; font-weight: bold;');
-    console.log('[MapChat] 📍 Centro do mapa: Brasil (-14.2350, -51.9253)');
+    console.log('%c[MapChat] 🗺️ Inicializando Google Maps', 'color: blue; font-weight: bold;');
     
-    try {
-        map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 5,
-            center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
-            mapTypeId: 'terrain'
-        });
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 5,
+        center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
+        mapTypeId: 'terrain',
+        gestureHandling: 'greedy' // Permite touch com um dedo
+    });
 
-        console.log('%c[MapChat] ✅ MAPA CRIADO COM SUCESSO', 'color: green;');
+    console.log('%c[MapChat] ✅ Mapa configurado com gestureHandling: greedy', 'color: green;');
 
-        // Adicionar listener para cliques no mapa
-        map.addListener('click', function(e) {
-            console.log('[MapChat] 🎯 CLIQUE NO MAPA:', e.latLng.lat(), e.latLng.lng());
-            makeGuess(e.latLng.lat(), e.latLng.lng());
-        });
+    // Adicionar listener para cliques no mapa
+    map.addListener('click', function(e) {
+        console.log('%c[MapChat] 👆 Clique no mapa:', 'color: purple;', e.latLng.lat(), e.latLng.lng());
+        makeGuess(e.latLng.lat(), e.latLng.lng());
+    });
 
-        console.log('[MapChat] 👂 Listener de clique adicionado');
-
-        // Carregar primeira pergunta
-        console.log('%c[MapChat] 🚀 CARREGANDO PRIMEIRA PERGUNTA...', 'color: blue;');
-        loadNewQuestion();
-    } catch (error) {
-        console.error('%c[MapChat] ❌ ERRO AO INICIALIZAR MAPA:', 'color: red; font-size: 16px;', error);
-    }
+    // Carregar primeira pergunta
+    loadNewQuestion();
 }
 
 // Carregar nova pergunta (com fallback)
@@ -273,6 +266,22 @@ function updateQuestionDisplay() {
         console.error('[MapChat] ❌ Elemento category não encontrado!');
     }
     
+    // Mostrar nome do criador embaixo da pergunta
+    const creatorName = currentQuestion.user_name || 'Admin MapChat';
+    let creatorElement = document.getElementById('question-creator');
+    
+    if (!creatorElement) {
+        // Criar elemento se não existir
+        creatorElement = document.createElement('div');
+        creatorElement.id = 'question-creator';
+        creatorElement.className = 'text-xs text-gray-500 mt-1';
+        document.getElementById('question-container').appendChild(creatorElement);
+        console.log('[MapChat] ✅ Elemento criador criado');
+    }
+    
+    creatorElement.innerHTML = `📝 Criada por: <strong>${creatorName}</strong>`;
+    console.log('[MapChat] ✅ Nome do criador atualizado:', creatorName);
+    
     // Mostrar indicador do modo
     const modeIndicator = gameMode === 'api' ? '🌐 Online' : '📱 Offline';
     console.log('[MapChat] 🔧 Modo do jogo:', modeIndicator);
@@ -286,7 +295,7 @@ function updateQuestionDisplay() {
         console.log('[MapChat] 🔧 Criando elemento de modo...');
         const newModeElement = document.createElement('div');
         newModeElement.id = 'game-mode';
-        newModeElement.className = 'text-xs text-gray-500 mt-2';
+        newModeElement.className = 'text-xs text-gray-400 mt-1';
         newModeElement.textContent = modeIndicator;
         
         const container = document.getElementById('question-container');
@@ -414,7 +423,6 @@ function processGuessResult(result, lat, lng) {
             html: `
                 <p><strong>Você acertou!</strong></p>
                 <p><strong>Distância:</strong> ${result.distance}km em ${attempts} tentativa(s)</p>
-                <p class="text-sm text-gray-600 mt-2">📝 Pergunta criada por: <strong>${currentQuestion.user_name || 'Admin MapChat'}</strong></p>
             `,
             icon: 'success',
             confirmButtonText: 'Próxima pergunta'
@@ -432,7 +440,6 @@ function processGuessResult(result, lat, lng) {
                 <p><strong>Resposta:</strong> ${currentQuestion.hint}</p>
                 <p><strong>Tentativas:</strong> ${attempts}/${maxAttempts}</p>
                 <p><strong>Última distância:</strong> ${result.distance}km ${result.direction}</p>
-                <p class="text-sm text-gray-600 mt-2">📝 Pergunta criada por: <strong>${currentQuestion.user_name || 'Admin MapChat'}</strong></p>
             `,
             icon: 'info',
             confirmButtonText: 'Próxima pergunta'
@@ -446,7 +453,6 @@ function processGuessResult(result, lat, lng) {
                 <p><strong>Distância:</strong> ${result.distance}km ${result.direction}</p>
                 <p><strong>Dica:</strong> ${result.hint}</p>
                 <p><strong>Tentativas:</strong> ${attempts}/${maxAttempts}</p>
-                <p class="text-sm text-gray-600 mt-2">📝 Pergunta criada por: <strong>${currentQuestion.user_name || 'Admin MapChat'}</strong></p>
             `,
             icon: 'warning',
             confirmButtonText: 'Tentar novamente'
@@ -525,18 +531,48 @@ function updateAttemptsDisplay() {
 }
 
 function resetTimer() {
+    console.log('%c[MapChat] ⏰ Reset do timer solicitado', 'color: blue;');
     // Resetar timer na navegação
-    const timerElement = document.getElementById('timer');
-    if (timerElement && typeof startTimer === 'function') {
+    if (typeof startTimer === 'function') {
         startTimer();
+        console.log('%c[MapChat] ✅ Timer iniciado', 'color: green;');
+    } else {
+        console.warn('%c[MapChat] ⚠️ Função startTimer não encontrada', 'color: orange;');
     }
 }
 
 function hideTimer() {
+    console.log('%c[MapChat] ⏰ Ocultando timer', 'color: blue;');
     // Parar timer na navegação
     if (typeof stopTimer === 'function') {
         stopTimer();
+        console.log('%c[MapChat] ✅ Timer parado', 'color: green;');
+    } else {
+        console.warn('%c[MapChat] ⚠️ Função stopTimer não encontrada', 'color: orange;');
     }
+}
+
+// Função chamada quando o tempo acaba
+function onTimerEnd() {
+    console.log('%c[MapChat] ⏰ TEMPO ESGOTADO!', 'color: red; font-weight: bold;');
+    
+    if (!currentQuestion) return;
+    
+    // Mostrar resposta correta
+    addMarker(currentQuestion.answer_lat, currentQuestion.answer_lng, true, 'Resposta Correta - Tempo Esgotado');
+    
+    Swal.fire({
+        title: '⏰ Tempo esgotado!',
+        html: `
+            <p><strong>Resposta:</strong> ${currentQuestion.hint}</p>
+            <p><strong>Tempo:</strong> 30 segundos</p>
+            <p><strong>Tentativas:</strong> ${attempts}/${maxAttempts}</p>
+        `,
+        icon: 'warning',
+        confirmButtonText: 'Próxima pergunta'
+    }).then(() => {
+        loadNewQuestion();
+    });
 }
 
 function zoomIn() {

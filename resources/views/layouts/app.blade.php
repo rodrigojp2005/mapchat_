@@ -97,6 +97,63 @@
                 });
             });
         </script>
+        
+        <!-- JavaScript do Timer -->
+        <script>
+            let timerInterval;
+            let currentTime = 30; // 30 segundos por pergunta
+            
+            function startTimer() {
+                console.log('%c[Timer] Iniciando cronômetro', 'color: red;');
+                currentTime = 30;
+                showTimer();
+                updateTimerDisplay();
+                
+                timerInterval = setInterval(() => {
+                    currentTime--;
+                    updateTimerDisplay();
+                    
+                    if (currentTime <= 0) {
+                        stopTimer();
+                        // Evento quando tempo acaba (será tratado no welcome.js)
+                        if (typeof onTimerEnd === 'function') {
+                            onTimerEnd();
+                        }
+                    }
+                }, 1000);
+            }
+            
+            function stopTimer() {
+                console.log('%c[Timer] Parando cronômetro', 'color: red;');
+                clearInterval(timerInterval);
+                hideTimer();
+            }
+            
+            function showTimer() {
+                document.getElementById('timerContainer').classList.remove('hidden');
+                document.getElementById('timerContainerMobile').classList.remove('hidden');
+            }
+            
+            function hideTimer() {
+                document.getElementById('timerContainer').classList.add('hidden');
+                document.getElementById('timerContainerMobile').classList.add('hidden');
+            }
+            
+            function updateTimerDisplay() {
+                document.getElementById('timer').textContent = currentTime;
+                document.getElementById('timerMobile').textContent = currentTime;
+                
+                // Muda cor quando restam poucos segundos
+                if (currentTime <= 10) {
+                    document.getElementById('timer').classList.add('text-red-800');
+                    document.getElementById('timerMobile').classList.add('text-red-800');
+                } else {
+                    document.getElementById('timer').classList.remove('text-red-800');
+                    document.getElementById('timerMobile').classList.remove('text-red-800');
+                }
+            }
+        </script>
+        
         <style>
             .pulse-timer {
                 animation: pulse 1s infinite;
