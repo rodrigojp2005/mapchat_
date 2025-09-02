@@ -3,6 +3,7 @@ let currentQuestion = null;
 let attempts = 0;
 let maxAttempts = 5;
 let gameMode = 'api'; // 'api' ou 'offline'
+let markers = []; // Array para controlar os marcadores
 
 console.log('%c[MapChat] 🚀 JAVASCRIPT CARREGADO - VERSÃO ULTRA DEBUG', 'color: green; font-size: 18px; font-weight: bold;');
 console.log('%c[MapChat] 📅 Carregado em:', 'color: green; font-weight: bold;', new Date().toLocaleString());
@@ -18,7 +19,8 @@ const offlineQuestions = [
         category: 'UFO',
         hint: 'ET Bilu mandou buscar conhecimento aqui!',
         answer_lat: -21.5554,
-        answer_lng: -45.4297
+        answer_lng: -45.4297,
+        user_name: 'Admin MapChat'
     },
     {
         id: 2,
@@ -26,7 +28,8 @@ const offlineQuestions = [
         category: 'Turismo',
         hint: 'Cidade maravilhosa, cheia de encantos mil!',
         answer_lat: -22.9068,
-        answer_lng: -43.1729
+        answer_lng: -43.1729,
+        user_name: 'Admin MapChat'
     },
     {
         id: 3,
@@ -34,7 +37,8 @@ const offlineQuestions = [
         category: 'Humor',
         hint: 'Terra da garoa e do trânsito infinito!',
         answer_lat: -23.5505,
-        answer_lng: -46.6333
+        answer_lng: -46.6333,
+        user_name: 'Admin MapChat'
     },
     {
         id: 4,
@@ -42,7 +46,8 @@ const offlineQuestions = [
         category: 'Natureza',
         hint: 'Tríplice fronteira com muito barulho de água!',
         answer_lat: -25.5163,
-        answer_lng: -54.5854
+        answer_lng: -54.5854,
+        user_name: 'Admin MapChat'
     },
     {
         id: 5,
@@ -50,7 +55,8 @@ const offlineQuestions = [
         category: 'Agronegócio',
         hint: 'No coração do Pantanal, onde o boi é rei!',
         answer_lat: -15.6014,
-        answer_lng: -56.0979
+        answer_lng: -56.0979,
+        user_name: 'Admin MapChat'
     },
     {
         id: 6,
@@ -58,7 +64,8 @@ const offlineQuestions = [
         category: 'Aventura',
         hint: 'Do alto da Pedra Bonita se vê o mar!',
         answer_lat: -22.9068,
-        answer_lng: -43.1729
+        answer_lng: -43.1729,
+        user_name: 'Admin MapChat'
     },
     {
         id: 7,
@@ -66,7 +73,8 @@ const offlineQuestions = [
         category: 'Festa',
         hint: 'Terra da música baiana e do acarajé!',
         answer_lat: -12.9714,
-        answer_lng: -38.5014
+        answer_lng: -38.5014,
+        user_name: 'Admin MapChat'
     },
     {
         id: 8,
@@ -74,7 +82,8 @@ const offlineQuestions = [
         category: 'Fronteira',
         hint: 'Cidade gêmea onde se fala "portunhol"!',
         answer_lat: -32.0346,
-        answer_lng: -52.0985
+        answer_lng: -52.0985,
+        user_name: 'Admin MapChat'
     },
     {
         id: 9,
@@ -82,7 +91,8 @@ const offlineQuestions = [
         category: 'Turismo',
         hint: 'No inverno fica cheio de paulista tentando ver neve!',
         answer_lat: -22.7386,
-        answer_lng: -45.5908
+        answer_lng: -45.5908,
+        user_name: 'Admin MapChat'
     },
     {
         id: 10,
@@ -90,7 +100,8 @@ const offlineQuestions = [
         category: 'Natureza',
         hint: 'Portal da Amazônia, onde rios se abraçam!',
         answer_lat: -3.1190,
-        answer_lng: -60.0217
+        answer_lng: -60.0217,
+        user_name: 'Admin MapChat'
     }
 ];
 
@@ -400,7 +411,11 @@ function processGuessResult(result, lat, lng) {
         hideTimer();
         Swal.fire({
             title: '🎉 Parabéns!',
-            text: `Você acertou! Distância: ${result.distance}km em ${attempts} tentativa(s)`,
+            html: `
+                <p><strong>Você acertou!</strong></p>
+                <p><strong>Distância:</strong> ${result.distance}km em ${attempts} tentativa(s)</p>
+                <p class="text-sm text-gray-600 mt-2">📝 Pergunta criada por: <strong>${currentQuestion.user_name || 'Admin MapChat'}</strong></p>
+            `,
             icon: 'success',
             confirmButtonText: 'Próxima pergunta'
         }).then(() => {
@@ -417,6 +432,7 @@ function processGuessResult(result, lat, lng) {
                 <p><strong>Resposta:</strong> ${currentQuestion.hint}</p>
                 <p><strong>Tentativas:</strong> ${attempts}/${maxAttempts}</p>
                 <p><strong>Última distância:</strong> ${result.distance}km ${result.direction}</p>
+                <p class="text-sm text-gray-600 mt-2">📝 Pergunta criada por: <strong>${currentQuestion.user_name || 'Admin MapChat'}</strong></p>
             `,
             icon: 'info',
             confirmButtonText: 'Próxima pergunta'
@@ -430,6 +446,7 @@ function processGuessResult(result, lat, lng) {
                 <p><strong>Distância:</strong> ${result.distance}km ${result.direction}</p>
                 <p><strong>Dica:</strong> ${result.hint}</p>
                 <p><strong>Tentativas:</strong> ${attempts}/${maxAttempts}</p>
+                <p class="text-sm text-gray-600 mt-2">📝 Pergunta criada por: <strong>${currentQuestion.user_name || 'Admin MapChat'}</strong></p>
             `,
             icon: 'warning',
             confirmButtonText: 'Tentar novamente'
@@ -461,6 +478,8 @@ function getDirection(lat1, lon1, lat2, lon2) {
 
 // Funções auxiliares (reutilizadas do código original)
 function addMarker(lat, lng, isCorrect, title = '') {
+    console.log('%c[MapChat] 📍 Adicionando marcador:', 'color: purple;', {lat, lng, isCorrect, title});
+    
     const marker = new google.maps.Marker({
         position: { lat: lat, lng: lng },
         map: map,
@@ -469,14 +488,23 @@ function addMarker(lat, lng, isCorrect, title = '') {
             url: isCorrect ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
         }
     });
+    
+    // Adicionar à lista de marcadores para controle
+    markers.push(marker);
+    console.log('%c[MapChat] 📍 Total de marcadores no mapa:', 'color: purple;', markers.length);
 }
 
 function clearMap() {
-    // Limpar todos os marcadores (se houver uma lista)
-    if (window.markers) {
-        window.markers.forEach(marker => marker.setMap(null));
-        window.markers = [];
-    }
+    console.log('%c[MapChat] 🧹 Limpando mapa - Marcadores atuais:', 'color: orange;', markers.length);
+    
+    // Limpar todos os marcadores
+    markers.forEach((marker, index) => {
+        console.log('%c[MapChat] 🧹 Removendo marcador', 'color: orange;', index + 1);
+        marker.setMap(null);
+    });
+    markers = [];
+    
+    console.log('%c[MapChat] ✅ Mapa limpo - Marcadores restantes:', 'color: green;', markers.length);
 }
 
 function resetAttempts() {
