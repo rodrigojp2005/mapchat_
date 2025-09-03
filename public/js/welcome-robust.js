@@ -468,6 +468,7 @@ function onTimerEnd() {
         icon: 'warning',
         confirmButtonText: 'Próxima pergunta'
     });
+}
 
 function zoomIn() {
     if (map) map.setZoom(map.getZoom() + 1);
