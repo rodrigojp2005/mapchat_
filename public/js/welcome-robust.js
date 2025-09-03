@@ -4,6 +4,8 @@ let attempts = 0;
 let maxAttempts = 5;
 let gameMode = 'api'; // 'api' ou 'offline'
 let markers = []; // Array para controlar os marcadores
+let guessMarker = null; // Marcador do palpite atual
+let confirmBtn = null; // Botão de confirmação
 
 console.log('%c[MapChat] 🚀 JAVASCRIPT CARREGADO - VERSÃO ULTRA DEBUG', 'color: green; font-size: 18px; font-weight: bold;');
 console.log('%c[MapChat] 📅 Carregado em:', 'color: green; font-weight: bold;', new Date().toLocaleString());
@@ -125,7 +127,7 @@ function initMap() {
     // Adicionar listener para cliques no mapa
     map.addListener('click', function(e) {
         console.log('%c[MapChat] 👆 Clique no mapa:', 'color: purple;', e.latLng.lat(), e.latLng.lng());
-        makeGuess(e.latLng.lat(), e.latLng.lng());
+        showGuessMarker(e.latLng.lat(), e.latLng.lng());
     });
 
     // Carregar primeira pergunta
@@ -460,9 +462,7 @@ function getDirection(lat1, lon1, lat2, lon2) {
 
 // Funções auxiliares (reutilizadas do código original)
 function addMarker(lat, lng, isCorrect, title = '') {
-    console.log('%c[MapChat] 📍 ADICIONANDO MARCADOR:', 'color: purple; font-weight: bold;', {lat, lng, isCorrect, title});
-    console.log('%c[MapChat] 📍 Marcadores ANTES de adicionar:', 'color: purple;', markers.length);
-    
+    // Marcador de resposta correta (verde)
     const marker = new google.maps.Marker({
         position: { lat: lat, lng: lng },
         map: map,
@@ -471,46 +471,83 @@ function addMarker(lat, lng, isCorrect, title = '') {
             url: isCorrect ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
         }
     });
-    
-    // Adicionar à lista de marcadores para controle
     markers.push(marker);
-    console.log('%c[MapChat] 📍 Marcador criado e adicionado ao array', 'color: purple;');
-    console.log('%c[MapChat] 📍 Total de marcadores APÓS adicionar:', 'color: purple; font-weight: bold;', markers.length);
-    
-    // Mostrar todos os marcadores atuais
-    console.log('%c[MapChat] 📍 Lista completa de marcadores:', 'color: purple;', markers.map((m, i) => ({
-        index: i,
-        position: m.getPosition() ? m.getPosition().toString() : 'null',
-        map: m.getMap() ? 'visível' : 'removido'
-    })));
+}
+
+function showGuessMarker(lat, lng) {
+    // Remove marcador anterior se existir
+    if (guessMarker) {
+        guessMarker.setMap(null);
+        guessMarker = null;
+    }
+    // Remove botão anterior se existir
+    if (confirmBtn) {
+        confirmBtn.remove();
+        confirmBtn = null;
+    }
+    // Adiciona novo marcador de palpite
+    guessMarker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+        }
+    });
+    // Adiciona botão de confirmação
+    confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Confirmar palpite';
+    confirmBtn.style.position = 'fixed';
+    confirmBtn.style.left = '50%';
+    confirmBtn.style.bottom = '80px';
+    confirmBtn.style.transform = 'translateX(-50%)';
+    confirmBtn.style.background = '#22c55e';
+    confirmBtn.style.color = 'white';
+    confirmBtn.style.fontWeight = 'bold';
+    confirmBtn.style.fontSize = '1.2em';
+    confirmBtn.style.padding = '12px 32px';
+    confirmBtn.style.border = 'none';
+    confirmBtn.style.borderRadius = '8px';
+    confirmBtn.style.zIndex = '9999';
+    confirmBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+    confirmBtn.style.cursor = 'pointer';
+    document.body.appendChild(confirmBtn);
+    confirmBtn.onclick = function() {
+        // Processa o palpite e limpa o botão/marcador
+        processGuess(lat, lng);
+    };
+}
+
+function processGuess(lat, lng) {
+    // Remove botão e marcador de palpite
+    if (confirmBtn) {
+        confirmBtn.remove();
+        confirmBtn = null;
+    }
+    if (guessMarker) {
+        guessMarker.setMap(null);
+        guessMarker = null;
+    }
+    // Chama a lógica original do palpite
+    makeGuess(lat, lng);
 }
 
 function clearMap() {
     console.log('%c[MapChat] 🧹 LIMPANDO MAPA - INÍCIO', 'color: orange; font-weight: bold;');
     console.log('%c[MapChat] 🧹 Marcadores para remover:', 'color: orange; font-weight: bold;', markers.length);
     
-    if (markers.length === 0) {
-        console.log('%c[MapChat] 🧹 Nenhum marcador para remover', 'color: orange;');
-        return;
+    // Limpa marcadores de resposta
+    markers.forEach(marker => marker.setMap(null));
+    markers.length = 0;
+    // Limpa marcador de palpite
+    if (guessMarker) {
+        guessMarker.setMap(null);
+        guessMarker = null;
     }
-    
-    // Limpar todos os marcadores
-    markers.forEach((marker, index) => {
-        console.log('%c[MapChat] 🧹 Removendo marcador', 'color: orange;', index + 1, 'de', markers.length);
-        if (marker && typeof marker.setMap === 'function') {
-            marker.setMap(null);
-            console.log('%c[MapChat] ✅ Marcador', index + 1, 'removido com sucesso', 'color: green;');
-        } else {
-            console.error('%c[MapChat] ❌ Marcador', index + 1, 'inválido:', 'color: red;', marker);
-        }
-    });
-    
-    // Resetar array
-    const oldLength = markers.length;
-    markers.length = 0; // Limpar array
-    markers.splice(0); // Garantir limpeza
-    
-    console.log('%c[MapChat] 🧹 Array limpo - Antes:', oldLength, 'Agora:', markers.length, 'color: orange; font-weight: bold;');
+    // Limpa botão de confirmação
+    if (confirmBtn) {
+        confirmBtn.remove();
+        confirmBtn = null;
+    }
     console.log('%c[MapChat] ✅ MAPA LIMPO COMPLETAMENTE', 'color: green; font-weight: bold;');
 }
 
