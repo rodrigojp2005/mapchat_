@@ -62,7 +62,7 @@ function loadNewQuestion() {
         // Seleciona aleatoriamente uma pergunta
         const idx = Math.floor(Math.random() * window.perguntas.length);
         currentQuestion = window.perguntas[idx];
-        showQuestion(currentQuestion);
+    updateQuestionDisplay();
     }
 
 // Modo offline removido
