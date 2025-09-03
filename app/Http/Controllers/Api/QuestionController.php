@@ -13,66 +13,73 @@ class QuestionController extends Controller
     // Retorna uma pergunta aleatória
     public function random()
     {
-        // Log detalhado para debug
         \Log::info('[MapChat API] Iniciando busca por pergunta aleatória');
-        
         try {
-            // Verificar conexão com banco
-            $questionCount = Question::count();
-            \Log::info("[MapChat API] Total de perguntas no banco: {$questionCount}");
-            
-            if ($questionCount == 0) {
-                \Log::warning('[MapChat API] Nenhuma pergunta encontrada no banco');
+            $questionCount = \App\Models\Question::count();
+            $quizCount = \App\Models\Quiz::count();
+            \Log::info("[MapChat API] Total de perguntas: {$questionCount}, quizzes: {$quizCount}");
+
+            if ($questionCount == 0 && $quizCount == 0) {
+                \Log::warning('[MapChat API] Nenhuma pergunta ou quiz encontrada no banco');
                 return response()->json([
                     'error' => 'Nenhuma pergunta disponível no banco de dados.',
                     'debug' => [
                         'question_count' => $questionCount,
-                        'timestamp' => now()
-                    ]
-                ], 404);
-            }
-            
-            $question = Question::inRandomOrder()->first();
-            \Log::info("[MapChat API] Pergunta selecionada: ID {$question->id}");
-            
-            if (!$question) {
-                \Log::error('[MapChat API] Erro: pergunta é null após busca');
-                return response()->json([
-                    'error' => 'Erro interno: pergunta não encontrada.',
-                    'debug' => [
-                        'question_count' => $questionCount,
+                        'quiz_count' => $quizCount,
                         'timestamp' => now()
                     ]
                 ], 404);
             }
 
-            $response = [
-                'id' => $question->id,
-                'question_text' => $question->question_text,
-                'category' => $question->category,
-                'hint' => $question->hint,
-                'answer_lat' => (float) $question->answer_lat,
-                'answer_lng' => (float) $question->answer_lng,
-                'user_id' => $question->user_id,
-                'user_name' => $question->user ? $question->user->name : 'anônimo',
-                'debug' => [
-                    'mode' => 'api',
-                    'timestamp' => now(),
-                    'server_info' => [
-                        'php_version' => PHP_VERSION,
-                        'laravel_version' => app()->version()
+            // Decide aleatoriamente de qual tabela buscar
+            $fromQuiz = ($quizCount > 0) && (($questionCount == 0) || rand(0, 1) === 1);
+
+            if ($fromQuiz) {
+                $quiz = \App\Models\Quiz::inRandomOrder()->first();
+                \Log::info("[MapChat API] Quiz selecionado: ID {$quiz->id}");
+                return response()->json([
+                    'id' => $quiz->id,
+                    'question_text' => $quiz->pergunta,
+                    'category' => null,
+                    'hint' => $quiz->dica,
+                    'answer_lat' => (float) $quiz->latitude,
+                    'answer_lng' => (float) $quiz->longitude,
+                    'user_id' => $quiz->user_id,
+                    'user_name' => method_exists($quiz, 'user') && $quiz->user ? $quiz->user->name : 'anônimo',
+                    'debug' => [
+                        'mode' => 'quiz',
+                        'timestamp' => now(),
+                        'server_info' => [
+                            'php_version' => PHP_VERSION,
+                            'laravel_version' => app()->version()
+                        ]
                     ]
-                ]
-            ];
-            
-            \Log::info('[MapChat API] Resposta preparada com sucesso');
-            
-            return response()->json($response);
-            
+                ]);
+            } else {
+                $question = \App\Models\Question::inRandomOrder()->first();
+                \Log::info("[MapChat API] Pergunta selecionada: ID {$question->id}");
+                return response()->json([
+                    'id' => $question->id,
+                    'question_text' => $question->question_text,
+                    'category' => $question->category,
+                    'hint' => $question->hint,
+                    'answer_lat' => (float) $question->answer_lat,
+                    'answer_lng' => (float) $question->answer_lng,
+                    'user_id' => $question->user_id,
+                    'user_name' => $question->user ? $question->user->name : 'anônimo',
+                    'debug' => [
+                        'mode' => 'api',
+                        'timestamp' => now(),
+                        'server_info' => [
+                            'php_version' => PHP_VERSION,
+                            'laravel_version' => app()->version()
+                        ]
+                    ]
+                ]);
+            }
         } catch (\Exception $e) {
             \Log::error('[MapChat API] Erro ao buscar pergunta: ' . $e->getMessage());
             \Log::error('[MapChat API] Stack trace: ' . $e->getTraceAsString());
-            
             return response()->json([
                 'error' => 'Erro ao buscar pergunta: ' . $e->getMessage(),
                 'debug' => [
