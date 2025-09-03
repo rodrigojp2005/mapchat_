@@ -13,101 +13,7 @@ console.log('%c[MapChat] 🌍 URL da página:', 'color: blue;', window.location.
 console.log('%c[MapChat] 🔧 User Agent:', 'color: blue;', navigator.userAgent);
 console.log('%c[MapChat] 📱 Viewport:', 'color: blue;', `${window.innerWidth}x${window.innerHeight}`);
 
-// Perguntas offline (backup caso API falhe)
-const offlineQuestions = [
-    {
-        id: 1,
-        question_text: 'Qual cidade ficou mundialmente conhecida por um "visitante" extraterrestre em 1996?',
-        category: 'UFO',
-        hint: 'ET Bilu mandou buscar conhecimento aqui!',
-        answer_lat: -21.5554,
-        answer_lng: -45.4297,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 2,
-        question_text: 'Em qual cidade você encontraria o famoso "Pão de Açúcar"?',
-        category: 'Turismo',
-        hint: 'Cidade maravilhosa, cheia de encantos mil!',
-        answer_lat: -22.9068,
-        answer_lng: -43.1729,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 3,
-        question_text: 'Onde fica o "umbigo do mundo" segundo os paulistanos?',
-        category: 'Humor',
-        hint: 'Terra da garoa e do trânsito infinito!',
-        answer_lat: -23.5505,
-        answer_lng: -46.6333,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 4,
-        question_text: 'Em qual cidade você pode visitar as famosas Cataratas e ainda ouvir "Iguaçu Falls" em três idiomas?',
-        category: 'Natureza',
-        hint: 'Tríplice fronteira com muito barulho de água!',
-        answer_lat: -25.5163,
-        answer_lng: -54.5854,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 5,
-        question_text: 'Qual cidade é famosa por ter mais bois que gente e ser a capital do agronegócio?',
-        category: 'Agronegócio',
-        hint: 'No coração do Pantanal, onde o boi é rei!',
-        answer_lat: -15.6014,
-        answer_lng: -56.0979,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 6,
-        question_text: 'Em que cidade você pode "voar" de asa delta e depois tomar uma caipirinha na praia?',
-        category: 'Aventura',
-        hint: 'Do alto da Pedra Bonita se vê o mar!',
-        answer_lat: -22.9068,
-        answer_lng: -43.1729,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 7,
-        question_text: 'Qual cidade tem o maior carnaval fora de época do Brasil e todo mundo vira "axé music"?',
-        category: 'Festa',
-        hint: 'Terra da música baiana e do acarajé!',
-        answer_lat: -12.9714,
-        answer_lng: -38.5014,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 8,
-        question_text: 'Em qual cidade você pode almoçar no Brasil e jantar no Uruguai no mesmo dia?',
-        category: 'Fronteira',
-        hint: 'Cidade gêmea onde se fala "portunhol"!',
-        answer_lat: -32.0346,
-        answer_lng: -52.0985,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 9,
-        question_text: 'Qual cidade é conhecida como a "Suíça brasileira" mas tem mais montanha-russa que neve?',
-        category: 'Turismo',
-        hint: 'No inverno fica cheio de paulista tentando ver neve!',
-        answer_lat: -22.7386,
-        answer_lng: -45.5908,
-        user_name: 'Admin MapChat'
-    },
-    {
-        id: 10,
-        question_text: 'Em que cidade você pode tomar banho de rio e ainda ver um encontro das águas que parece mágica?',
-        category: 'Natureza',
-        hint: 'Portal da Amazônia, onde rios se abraçam!',
-        answer_lat: -3.1190,
-        answer_lng: -60.0217,
-        user_name: 'Admin MapChat'
-    }
-];
-
-let usedQuestions = [];
+// Modo somente API: sem perguntas offline
 
 // Inicializar Google Maps
 function initMap() {
@@ -165,9 +71,14 @@ async function loadNewQuestion() {
             throw new Error(`API retornou erro: ${response.status}`);
         }
     } catch (error) {
-        console.warn('%c[MapChat] ⚠️ API falhou, usando modo offline', 'color: orange; font-weight: bold;', error);
-        // Fallback para modo offline
-        loadOfflineQuestion();
+        console.warn('%c[MapChat] ⚠️ API falhou - modo offline desativado', 'color: orange; font-weight: bold;', error);
+        currentQuestion = null;
+        Swal.fire({
+            title: 'Sem perguntas disponíveis',
+            html: '<p>Não foi possível carregar perguntas do servidor.</p><p>Tente novamente mais tarde.</p>',
+            icon: 'info',
+            confirmButtonText: 'Recarregar'
+        }).then(() => window.location.reload());
     }
 
     if (currentQuestion) {
@@ -181,34 +92,7 @@ async function loadNewQuestion() {
     }
 }
 
-// Carregar pergunta offline
-function loadOfflineQuestion() {
-    console.log('%c[MapChat] 📱 CARREGANDO PERGUNTA OFFLINE', 'color: purple; font-size: 14px;');
-    console.log('[MapChat] 📊 Perguntas usadas:', usedQuestions);
-    console.log('[MapChat] 📝 Total de perguntas offline:', offlineQuestions.length);
-    
-    // Resetar perguntas usadas se todas foram utilizadas
-    if (usedQuestions.length >= offlineQuestions.length) {
-        console.log('[MapChat] 🔄 Resetando perguntas usadas - todas foram utilizadas');
-        usedQuestions = [];
-    }
-
-    // Filtrar perguntas não utilizadas
-    const availableQuestions = offlineQuestions.filter(q => !usedQuestions.includes(q.id));
-    console.log('[MapChat] 📋 Perguntas disponíveis:', availableQuestions.length);
-    
-    // Selecionar pergunta aleatória
-    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-    currentQuestion = availableQuestions[randomIndex];
-    usedQuestions.push(currentQuestion.id);
-    
-    gameMode = 'offline';
-    console.log('%c[MapChat] ✅ PERGUNTA OFFLINE CARREGADA:', 'color: green; font-weight: bold;', {
-        id: currentQuestion.id,
-        texto: currentQuestion.question_text,
-        categoria: currentQuestion.category
-    });
-}
+// Modo offline removido
 
 // Atualizar display da pergunta
 function updateQuestionDisplay() {
