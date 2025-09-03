@@ -505,4 +505,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+
 console.log('%c[MapChat] 📜 FINAL DO SCRIPT ALCANÇADO', 'color: purple; font-size: 14px;');
+console.log('[MapChat] 🧪 window.perguntas:', window.perguntas);
