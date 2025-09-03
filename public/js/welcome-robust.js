@@ -114,7 +114,9 @@ function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         zoom: 5,
         center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
-        mapTypeId: 'terrain',
+        mapTypeControl: false,
+        fullscreenControl: false,
+        streetViewControl: false,
         gestureHandling: 'greedy' // Permite touch com um dedo
     });
 
@@ -258,6 +260,7 @@ function updateQuestionDisplay() {
     const modeIndicator = gameMode === 'api' ? '🌐 Online' : '📱 Offline';
     console.log('[MapChat] 🔧 Modo do jogo:', modeIndicator);
     
+    /*
     const modeElement = document.getElementById('game-mode');
     if (modeElement) {
         modeElement.textContent = modeIndicator;
@@ -278,6 +281,7 @@ function updateQuestionDisplay() {
             console.error('[MapChat] ❌ Container question-container não encontrado!');
         }
     }
+    */
 }
 
 // Fazer palpite
