@@ -40,57 +40,30 @@ function initMap() {
     loadNewQuestion();
 }
 
-// Carregar nova pergunta (com fallback)
-async function loadNewQuestion() {
-    console.log('%c[MapChat] 🔄 CARREGANDO NOVA PERGUNTA...', 'color: orange; font-size: 16px; font-weight: bold;');
-    
-    // LIMPAR MAPA PRIMEIRO (antes de tudo)
+// Função para carregar nova pergunta do array local
+function loadNewQuestion() {
+    console.log('[MapChat] 🟠 CARREGANDO NOVA PERGUNTA...');
     clearMap();
-    
-    try {
-        console.log('%c[MapChat] 🌐 Tentando carregar via API...', 'color: blue;');
-        
-        // Tentar API primeiro
-        const response = await fetch('/api/question/random', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
-
-        console.log('%c[MapChat] � Resposta da API:', 'color: blue;', response.status, response.statusText);
-
-        if (response.ok) {
-            const data = await response.json();
-            console.log('%c[MapChat] � Dados recebidos da API:', 'color: green;', data);
-            currentQuestion = data;
-            gameMode = 'api';
-            console.log('%c[MapChat] ✅ Pergunta carregada via API', 'color: green; font-weight: bold;');
-        } else {
-            throw new Error(`API retornou erro: ${response.status}`);
-        }
-    } catch (error) {
-        console.warn('%c[MapChat] ⚠️ API falhou - modo offline desativado', 'color: orange; font-weight: bold;', error);
-        currentQuestion = null;
+    removeAllMarkers();
+    if (!window.perguntas || window.perguntas.length === 0) {
         Swal.fire({
-            title: 'Sem perguntas disponíveis',
-            html: '<p>Não foi possível carregar perguntas do servidor.</p><p>Tente novamente mais tarde.</p>',
             icon: 'info',
-            confirmButtonText: 'Recarregar'
-        }).then(() => window.location.reload());
+                title: 'Sem perguntas disponíveis',
+                html: 'Não há perguntas cadastradas no banco.<br>Adicione perguntas ou tente novamente mais tarde.',
+                confirmButtonText: 'Recarregar',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                customClass: {popup: 'rounded-lg'},
+                preConfirm: () => { window.location.reload(); }
+            });
+            console.error('[MapChat] ❌ NENHUMA PERGUNTA CARREGADA!');
+            return;
+        }
+        // Seleciona aleatoriamente uma pergunta
+        const idx = Math.floor(Math.random() * window.perguntas.length);
+        currentQuestion = window.perguntas[idx];
+        showQuestion(currentQuestion);
     }
-
-    if (currentQuestion) {
-        console.log('%c[MapChat] 📝 ATUALIZANDO DISPLAY COM PERGUNTA:', 'color: blue;', currentQuestion);
-        updateQuestionDisplay();
-        resetAttempts();
-        resetTimer();
-        // NÃO clearMap aqui - já foi feito no início
-    } else {
-        console.error('%c[MapChat] ❌ NENHUMA PERGUNTA CARREGADA!', 'color: red; font-size: 16px;');
-    }
-}
 
 // Modo offline removido
 
@@ -494,10 +467,7 @@ function onTimerEnd() {
         `,
         icon: 'warning',
         confirmButtonText: 'Próxima pergunta'
-    }).then(() => {
-        loadNewQuestion();
     });
-}
 
 function zoomIn() {
     if (map) map.setZoom(map.getZoom() + 1);

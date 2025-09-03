@@ -15,9 +15,9 @@ use App\Http\Controllers\QuizController;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
+use App\Http\Controllers\WelcomeController;
+Route::get('/', [WelcomeController::class, 'index']);
 
 
 

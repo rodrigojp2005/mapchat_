@@ -25,9 +25,14 @@
     </div>
 @endsection
 
+
 @push('scripts')
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Perguntas do backend
+    window.perguntas = @json($questions);
+</script>
 <script src="/js/welcome-robust.js"></script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBzEzusC_k3oEoPnqynq2N4a0aA3arzH-c&callback=initMap"></script>
 <script>
