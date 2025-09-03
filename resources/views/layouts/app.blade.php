@@ -25,7 +25,7 @@
             <div class="hidden md:flex items-center space-x-6 pr-2" id="navbarRight">
                 <div id="timerContainer" class="flex items-center bg-red-50 rounded-lg px-3 py-1 border border-red-200 hidden">
                     <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDE0OWw4Y3BndHh5Zmpwam12djc5MGRtb3ZocXJqeng0ZThoemE3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/jV0fRmUyDAGRalG0T7/giphy.gif" alt="Timer" class="w-5 h-5 mr-2">
-                    <span id="timer" class="font-mono font-bold text-red-600 text-lg pulse-timer">30</span>
+                    <span id="timer" class="font-mono font-bold text-red-600 text-lg pulse-timer">45</span>
                 </div>
                 <a href="#sobre" class="text-gray-700 font-medium hover:text-blue-600">Sobre</a>
                 <a href="#como-jogar" class="text-gray-700 font-medium hover:text-blue-600">Como jogar</a>
@@ -42,7 +42,7 @@
             <div class="md:hidden flex items-center">
                 <div id="timerContainerMobile" class="flex items-center bg-red-50 rounded-lg px-2 py-1 border border-red-200 mr-2 hidden">
                     <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDE0OWw4Y3BndHh5Zmpwam12djc5MGRtb3ZocXJqeng0ZThoemE3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/jV0fRmUyDAGRalG0T7/giphy.gif" alt="Timer" class="w-4 h-4 mr-1">
-                    <span id="timerMobile" class="font-mono font-bold text-red-600 text-sm pulse-timer">30</span>
+                    <span id="timerMobile" class="font-mono font-bold text-red-600 text-sm pulse-timer">45</span>
                 </div>
                 <button id="navbarMenu" onclick="toggleMenu()" class="focus:outline-none p-2 rounded hover:bg-gray-100">
                     <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -101,7 +101,7 @@
         <!-- JavaScript do Timer -->
         <script>
             let timerInterval;
-            let currentTime = 30; // 30 segundos por pergunta
+            let currentTime = 45; // 45 segundos por pergunta
             let timerRunning = false; // Flag para evitar múltiplos timers
             
             function startTimer() {
@@ -111,7 +111,7 @@
                 }
                 
                 console.log('%c[Timer] ⏰ Iniciando cronômetro', 'color: red; font-weight: bold;');
-                currentTime = 30;
+                currentTime = 45;
                 timerRunning = true;
                 showTimer();
                 updateTimerDisplay();

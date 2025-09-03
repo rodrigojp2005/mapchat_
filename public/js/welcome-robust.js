@@ -568,7 +568,7 @@ function onTimerEnd() {
         title: '⏰ Tempo esgotado!',
         html: `
             <p><strong>Resposta:</strong> ${currentQuestion.hint}</p>
-            <p><strong>Tempo:</strong> 30 segundos</p>
+            <p><strong>Tempo:</strong> 45 segundos</p>
             <p><strong>Tentativas:</strong> ${attempts}/${maxAttempts}</p>
         `,
         icon: 'warning',
