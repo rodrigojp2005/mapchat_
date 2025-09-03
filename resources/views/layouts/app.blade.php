@@ -30,7 +30,9 @@
                 <a href="#sobre" class="text-gray-700 font-medium hover:text-blue-600">Sobre</a>
                 <a href="#como-jogar" class="text-gray-700 font-medium hover:text-blue-600">Como jogar</a>
                 @auth
-                    <a href="{{ route('dashboard') }}" class="bg-blue-600 text-white rounded px-4 py-1 font-semibold ml-2 hover:bg-blue-700 transition">Dashboard</a>
+                    @if (!request()->is('quiz/create'))
+                        <a href="{{ route('quiz.create') }}" class="bg-green-600 text-white rounded px-4 py-1 font-semibold ml-2 hover:bg-green-700 transition">Criar Quiz</a>
+                    @endif
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
                         <button type="submit" class="ml-2 bg-gray-200 text-gray-700 rounded px-3 py-1 font-semibold hover:bg-gray-300 transition">Sair</button>
@@ -52,7 +54,7 @@
                 <a href="#sobre" class="block px-4 py-2 text-gray-700 hover:text-blue-600">Sobre</a>
                 <a href="#como-jogar" class="block px-4 py-2 text-gray-700 hover:text-blue-600">Como jogar</a>
                 @auth
-                    <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700">Dashboard</a>
+                    <a href="{{ route('quiz.create') }}" class="block px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700">Criar Quiz</a>
                     <form method="POST" action="{{ route('logout') }}" class="block px-4 py-2">
                         @csrf
                         <button type="submit" class="w-full text-left text-gray-700">Sair</button>
@@ -183,6 +185,42 @@
                 }
             }
         </style>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ...existing code...
+
+            // SweetAlert para Sobre e Como Jogar
+            function showSobre() {
+                Swal.fire({
+                    title: 'Sobre o Mapchat',
+                    html: '<p>Mapchat é uma plataforma de perguntas geográficas interativas. Crie, jogue e desafie seus amigos!</p>',
+                    icon: 'info',
+                    confirmButtonText: 'Fechar'
+                });
+            }
+            function showComoJogar() {
+                Swal.fire({
+                    title: 'Como Jogar',
+                    html: '<ul style="text-align:left"><li>Escolha uma pergunta ou crie a sua.</li><li>Clique no mapa para dar seu palpite.</li><li>Confirme e veja se acertou!</li></ul>',
+                    icon: 'question',
+                    confirmButtonText: 'Fechar'
+                });
+            }
+            document.querySelectorAll('a[href="#sobre"]').forEach(function(el){
+                el.addEventListener('click', function(e){
+                    e.preventDefault();
+                    showSobre();
+                });
+            });
+            document.querySelectorAll('a[href="#como-jogar"]').forEach(function(el){
+                el.addEventListener('click', function(e){
+                    e.preventDefault();
+                    showComoJogar();
+                });
+            });
+        });
+        </script>
         @stack('scripts')
     </body>
 </html>
