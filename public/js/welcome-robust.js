@@ -44,7 +44,6 @@ function initMap() {
 function loadNewQuestion() {
     console.log('[MapChat] 🟠 CARREGANDO NOVA PERGUNTA...');
     clearMap();
-    removeAllMarkers();
     if (!window.perguntas || window.perguntas.length === 0) {
         Swal.fire({
             icon: 'info',
