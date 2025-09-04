@@ -40,7 +40,6 @@
                 <a href="#sobre" class="text-gray-700 font-medium hover:text-blue-600">Sobre</a>
                 <a href="#como-jogar" class="text-gray-700 font-medium hover:text-blue-600">Como jogar</a>
                 @auth
-                    <span class="text-gray-700 font-semibold mr-2">Olá {{ Auth::user()->name }}</span>
                     @if (!request()->is('quiz/create'))
                         <a href="{{ route('quiz.create') }}" class="bg-green-600 text-white rounded px-4 py-1 font-semibold ml-2 hover:bg-green-700 transition">Criar Quiz</a>
                     @endif
