@@ -22,8 +22,8 @@
                 <img src="https://img.icons8.com/ios-filled/50/000000/chat.png" alt="Logo" class="h-8 mr-3">
                 <span class="font-bold text-lg text-blue-600 tracking-wide">mapchat</span>
             </div>
-            <div class="hidden md:flex items-center space-x-6 pr-2" id="navbarRight">
             <span class="text-gray-700 font-semibold mr-2">Olá {{ Auth::user()->name }}</span>
+            <div class="hidden md:flex items-center space-x-6 pr-2" id="navbarRight">
                 <div id="timerContainer" class="flex items-center bg-red-50 rounded-lg px-3 py-1 border border-red-200 hidden">
                     <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDE0OWw4Y3BndHh5Zmpwam12djc5MGRtb3ZocXJqeng0ZThoemE3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/jV0fRmUyDAGRalG0T7/giphy.gif" alt="Timer" class="w-5 h-5 mr-2">
                     <span id="timer" class="font-mono font-bold text-red-600 text-lg pulse-timer">45</span>
