@@ -41,7 +41,8 @@
                 @else
                     <a href="/login" class="bg-blue-600 text-white rounded px-4 py-1 font-semibold ml-2 hover:bg-blue-700 transition">Entrar</a>
                 @endauth
-            </div class="md:hidden flex items-center">
+            </div>
+            <div class="md:hidden flex items-center">
                 <div id="timerContainerMobile" class="flex items-center bg-red-50 rounded-lg px-2 py-1 border border-red-200 mr-2 hidden">
                     <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDE0OWw4Y3BndHh5Zmpwam12djc5MGRtb3ZocXJqeng0ZThoemE3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/jV0fRmUyDAGRalG0T7/giphy.gif" alt="Timer" class="w-4 h-4 mr-1">
                     <span id="timerMobile" class="font-mono font-bold text-red-600 text-sm pulse-timer">45</span>
