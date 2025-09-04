@@ -10,15 +10,19 @@
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-        <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @stack('styles')
-    </head>
-    <body class="font-sans antialiased">
-        <!-- Navigation Bar -->
-        <nav class="w-full bg-white flex items-center justify-between px-6 md:px-12 h-14 shadow fixed top-0 left-0 z-50">
-            <div class="flex items-center">
+            <div class="md:hidden flex items-center w-full justify-between">
+                <div class="flex items-center">
+                    <div id="timerContainerMobile" class="flex items-center bg-red-50 rounded-lg px-2 py-1 border border-red-200 mr-2 hidden">
+                        <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDE0OWw4Y3BndHh5Zmpwam12djc5MGRtb3ZocXJqeng0ZThoemE3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/jV0fRmUyDAGRalG0T7/giphy.gif" alt="Timer" class="w-4 h-4 mr-1">
+                        <span id="timerMobile" class="font-mono font-bold text-red-600 text-sm pulse-timer">45</span>
+                    </div>
+                    @auth
+                        <span class="text-gray-700 font-semibold text-sm ml-2">Olá {{ Auth::user()->name }}</span>
+                    @endauth
+                </div>
+                <button id="navbarMenu" onclick="toggleMenu()" class="focus:outline-none p-2 rounded hover:bg-gray-100">
+                    <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
                 <img src="https://img.icons8.com/ios-filled/50/000000/chat.png" alt="Logo" class="h-8 mr-3">
                 <span class="font-bold text-lg text-blue-600 tracking-wide">mapchat</span>
             </div>
