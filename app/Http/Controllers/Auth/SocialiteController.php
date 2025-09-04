@@ -17,17 +17,25 @@ class SocialiteController extends Controller
 
     public function handleGoogleCallback()
     {
-        $googleUser = Socialite::driver('google')->stateless()->user();
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
 
-        $user = User::firstOrCreate([
-            'email' => $googleUser->getEmail(),
-        ], [
-            'name' => $googleUser->getName() ?? $googleUser->getNickname(),
-            'password' => bcrypt(uniqid()),
-        ]);
+            $user = User::firstOrCreate([
+                'email' => $googleUser->getEmail(),
+            ], [
+                'name' => $googleUser->getName() ?? $googleUser->getNickname(),
+                'password' => bcrypt(uniqid()),
+            ]);
 
-        Auth::login($user, true);
+            Auth::login($user, true);
 
-        return redirect()->intended('/dashboard');
+            // Redireciona para criar quiz (dashboard removido)
+            return redirect()->intended(route('quiz.create'));
+        } catch (\Throwable $e) {
+            \Log::error('[OAuth] Google callback error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->route('login')->with('error', 'Falha ao autenticar com Google.');
+        }
     }
 }
