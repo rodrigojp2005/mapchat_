@@ -30,6 +30,8 @@ class QuizController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        return redirect()->route('dashboard')->with('success', 'Pergunta criada com sucesso!');
+        // Após salvar, redireciona para a página inicial (welcome) para ver as questões
+        return redirect()->route('welcome')
+            ->with('success', 'Pergunta criada com sucesso!');
     }
 }
