@@ -11,7 +11,7 @@ class WelcomeController extends Controller
     {
         // Busca todas perguntas e quizzes
         $questions = Question::all();
-        $quizzes = Quiz::all();
+    $quizzes = Quiz::with('user')->get();
         // Normaliza quizzes para o mesmo formato das perguntas
         $quizQuestions = $quizzes->map(function($quiz) {
             return [
@@ -22,10 +22,10 @@ class WelcomeController extends Controller
                 'answer_lat' => (float) $quiz->latitude,
                 'answer_lng' => (float) $quiz->longitude,
                 'user_id' => $quiz->user_id,
-                'user_name' => 'anônimo',
+        'user_name' => optional($quiz->user)->name ?? 'anônimo',
             ];
         });
-        $allQuestions = $questions->map(function($q) {
+    $allQuestions = $questions->map(function($q) {
             return [
                 'id' => $q->id,
                 'question_text' => $q->question_text,
@@ -34,7 +34,7 @@ class WelcomeController extends Controller
                 'answer_lat' => (float) $q->answer_lat,
                 'answer_lng' => (float) $q->answer_lng,
                 'user_id' => $q->user_id,
-                'user_name' => 'anônimo',
+        'user_name' => optional($q->user)->name ?? 'anônimo',
             ];
         })->concat($quizQuestions)->values();
         return view('welcome', ['questions' => $allQuestions]);

@@ -61,6 +61,10 @@ function loadNewQuestion() {
         // Seleciona aleatoriamente uma pergunta
         const idx = Math.floor(Math.random() * window.perguntas.length);
         currentQuestion = window.perguntas[idx];
+    // reset attempts and timer for each new question
+    attempts = 0;
+    updateAttemptsDisplay();
+    resetTimer();
     updateQuestionDisplay();
     }
 
