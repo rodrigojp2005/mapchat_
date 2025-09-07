@@ -34,7 +34,7 @@
     window.perguntas = @json($questions);
 </script>
 <script src="/js/welcome-robust.js"></script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBzEzusC_k3oEoPnqynq2N4a0aA3arzH-c&callback=initMap"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&callback=initMap"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         function showSobre() {
