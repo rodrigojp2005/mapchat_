@@ -111,7 +111,7 @@ function initMap() {
                             fakeLng = pseudo.lng;
                             visitorMarker.setPosition({ lat: fakeLat, lng: fakeLng });
                             circle.setCenter({ lat: fakeLat, lng: fakeLng });
-                            circle.setRadius(newPrecision * 1000);
+                            circle.setRadius(precision * 1000);
                             map.setCenter({ lat: fakeLat, lng: fakeLng });
                             sessionStorage.setItem('precisionAdjusted', 'true');
                             sessionStorage.setItem('precisionValue', precision);
