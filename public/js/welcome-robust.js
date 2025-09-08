@@ -481,32 +481,25 @@ function zoomOut() {
     if (map) map.setZoom(map.getZoom() - 1);
 }
 
+// Função global para Google Maps callback
+window.initMap = initMap;
+
 // Inicializar quando a página carregar
 window.onload = function() {
     console.log('%c[MapChat] 📄 PÁGINA CARREGADA COMPLETAMENTE', 'color: blue; font-size: 16px;');
     console.log('[MapChat] ⏰ Timestamp:', new Date().toISOString());
     console.log('[MapChat] 🗺️ Aguardando Google Maps carregar...');
-};
-
-// Função global para Google Maps callback
-window.initMap = initMap;
-
-// Log quando DOM estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('%c[MapChat] 🏗️ DOM PRONTO', 'color: green; font-size: 16px;');
-    
     // Verificar elementos importantes
     const mapElement = document.getElementById('map');
     const questionElement = document.getElementById('question-text');
     const categoryElement = document.getElementById('category');
-    
     console.log('[MapChat] 🧩 Elementos DOM encontrados:', {
         map: !!mapElement,
         questionText: !!questionElement,
         category: !!categoryElement,
         mapDimensions: mapElement ? `${mapElement.offsetWidth}x${mapElement.offsetHeight}` : 'N/A'
     });
-});
+};
 
 
 console.log('%c[MapChat] 📜 FINAL DO SCRIPT ALCANÇADO', 'color: purple; font-size: 14px;');
