@@ -35,27 +35,34 @@ function initMap() {
         navigator.geolocation.getCurrentPosition(function(position) {
             const userLat = position.coords.latitude;
             const userLng = position.coords.longitude;
-            // Gerar posição aleatória em raio de 50km
-            const randomRadius = Math.random() * 50; // km
-            const randomAngle = Math.random() * 2 * Math.PI;
-            const earthRadius = 6371; // km
-            const latOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
-            const lngOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(userLat * Math.PI / 180);
-            let fakeLat = userLat + latOffset;
-            let fakeLng = userLng + lngOffset;
+            // Gerar posição pseudo real em raio de 500m
+            function getPseudoReal(lat, lng, maxMeters) {
+                const earthRadius = 6371000; // metros
+                const randomRadius = Math.random() * maxMeters;
+                const randomAngle = Math.random() * 2 * Math.PI;
+                const latOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
+                const lngOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(lat * Math.PI / 180);
+                return {
+                    lat: lat + latOffset,
+                    lng: lng + lngOffset
+                };
+            }
 
-            // Precisão inicial
-            let precision = randomRadius;
+            let pseudo = getPseudoReal(userLat, userLng, 500);
+            let fakeLat = pseudo.lat;
+            let fakeLng = pseudo.lng;
+
+            // Precisão inicial (raio aleatório até 50km)
+            let precision = Math.random() * 50;
             let precisionAdjusted = false;
 
-            // Salvar na sessão se já ajustou precisão
             if (sessionStorage.getItem('precisionAdjusted')) {
                 precisionAdjusted = true;
                 precision = parseFloat(sessionStorage.getItem('precisionValue')) || precision;
             }
 
             // Adicionar marcador customizado
-            const visitorMarker = new google.maps.Marker({
+            let visitorMarker = new google.maps.Marker({
                 position: { lat: fakeLat, lng: fakeLng },
                 map: map,
                 icon: {
@@ -79,8 +86,8 @@ function initMap() {
 
             // SweetAlert ao clicar no marcador
             visitorMarker.addListener('click', function() {
-                let html = `<p>O raio de sua posição está em torno de <b>${Math.round(precision)} km</b> da sua posição real, gerado aleatoriamente.</p>`;
-                html += `<p>Você pode ajustar a precisão para até <b>500 metros</b> apenas uma vez nesta sessão.</p>`;
+                let html = `<p>O raio de sua posição está em torno de <b>${Math.round(precision)} km</b> da sua posição pseudo real, gerado aleatoriamente.</p>`;
+                html += `<p>Você pode ajustar a precisão para até <b>500 metros</b> apenas uma vez nesta sessão. Sua posição nunca será exata.</p>`;
                 html += `<div style='margin-top:16px;'>
                     <input type='range' min='0.5' max='50' step='0.1' value='${precision}' id='precSlider' ${precisionAdjusted ? 'disabled' : ''} style='width:100%'>
                     <div>Precisão: <span id='precValue'>${Math.round(precision * 1000)} m</span></div>
@@ -111,7 +118,14 @@ function initMap() {
                             if (newPrecision < 0.5) newPrecision = 0.5;
                             if (newPrecision > 50) newPrecision = 50;
                             precision = newPrecision;
+                            // Gerar nova posição pseudo real dentro do novo raio de precisão (máx 500m)
+                            pseudo = getPseudoReal(userLat, userLng, 500);
+                            fakeLat = pseudo.lat;
+                            fakeLng = pseudo.lng;
+                            visitorMarker.setPosition({ lat: fakeLat, lng: fakeLng });
+                            circle.setCenter({ lat: fakeLat, lng: fakeLng });
                             circle.setRadius(precision * 1000);
+                            map.setCenter({ lat: fakeLat, lng: fakeLng });
                             sessionStorage.setItem('precisionAdjusted', 'true');
                             sessionStorage.setItem('precisionValue', precision);
                             precisionAdjusted = true;
