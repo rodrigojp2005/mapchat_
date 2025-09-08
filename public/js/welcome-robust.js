@@ -1,3 +1,66 @@
+            // Função para gerar ID único por sessão
+            function getSessionId() {
+                let sid = sessionStorage.getItem('mapchat_sid');
+                if (!sid) {
+                    sid = 'sid_' + Math.random().toString(36).substr(2, 12);
+                    sessionStorage.setItem('mapchat_sid', sid);
+                }
+                return sid;
+            }
+
+            // Função para enviar posição ao backend
+            function sendUserPosition(lat, lng) {
+                fetch('/api/user-position', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: getSessionId(),
+                        lat: lat,
+                        lng: lng
+                    })
+                }).then(r => r.json()).then(resp => {
+                    // console.log('Posição enviada:', resp);
+                }).catch(e => {
+                    console.warn('Erro ao enviar posição:', e);
+                });
+            }
+
+            // Função para buscar e exibir outros usuários
+            let otherMarkers = [];
+            function fetchOtherPositions() {
+                fetch('/api/user-positions')
+                    .then(r => r.json())
+                    .then(list => {
+                        // Remove marcadores antigos
+                        otherMarkers.forEach(m => m.setMap(null));
+                        otherMarkers = [];
+                        // Adiciona marcadores dos outros usuários
+                        list.forEach(u => {
+                            // Não mostra o próprio marcador
+                            if (u.lat && u.lng && u.lat != fakeLat && u.lng != fakeLng) {
+                                let m = new google.maps.Marker({
+                                    position: { lat: u.lat, lng: u.lng },
+                                    map: map,
+                                    icon: {
+                                        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                                    },
+                                    title: 'Outro usuário'
+                                });
+                                otherMarkers.push(m);
+                            }
+                        });
+                    });
+            }
+
+            // Envia posição inicial
+            sendUserPosition(fakeLat, fakeLng);
+            // Busca outros usuários a cada 10s
+            setInterval(fetchOtherPositions, 10000);
+            // Busca inicial
+            fetchOtherPositions();
 let map;
 let currentQuestion = null;
 let attempts = 0;
@@ -125,6 +188,7 @@ function initMap() {
                             fakeLng = pseudo.lng;
                             visitorMarker.setPosition({ lat: fakeLat, lng: fakeLng });
                             map.setCenter({ lat: fakeLat, lng: fakeLng });
+                            sendUserPosition(fakeLat, fakeLng);
                             sessionStorage.setItem('precisionAdjusted', 'true');
                             sessionStorage.setItem('precisionValue', precision);
                             precisionAdjusted = true;
