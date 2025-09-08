@@ -65,17 +65,6 @@ function initMap() {
             let visitorMarker = new google.maps.Marker({
                 position: { lat: fakeLat, lng: fakeLng },
                 map: map,
-                icon: {
-                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                },
-                title: 'Sua posição aproximada'
-            });
-            map.setCenter({ lat: fakeLat, lng: fakeLng });
-
-            // Círculo de precisão
-            let circle = new google.maps.Circle({
-                strokeColor: '#2196f3',
-                strokeOpacity: 0.6,
                 strokeWeight: 2,
                 fillColor: '#90caf9',
                 fillOpacity: 0.25,
@@ -116,8 +105,6 @@ function initMap() {
                         if (slider) {
                             let newPrecision = parseFloat(slider.value);
                             if (newPrecision < 0.5) newPrecision = 0.5;
-                            if (newPrecision > 50) newPrecision = 50;
-                            precision = newPrecision;
                             // Gerar nova posição pseudo real dentro do novo raio de precisão (máx 500m)
                             pseudo = getPseudoReal(userLat, userLng, 500);
                             fakeLat = pseudo.lat;
