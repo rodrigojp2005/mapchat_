@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 use App\Http\Controllers\Api\QuestionController;
+use App\Http\Controllers\Api\UserPositionController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
@@ -64,3 +65,7 @@ Route::get('/debug', function () {
 // Rotas das perguntas
 Route::get('/question/random', [QuestionController::class, 'random']);
 Route::post('/question/guess', [QuestionController::class, 'guess']);
+
+// Posições dos usuários (pseudo reais)
+Route::post('/user-position', [UserPositionController::class, 'store']);
+Route::get('/user-positions', [UserPositionController::class, 'index']);
