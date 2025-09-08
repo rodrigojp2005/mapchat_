@@ -230,6 +230,6 @@
             });
         });
         </script>
-        @stack('scripts')
+        <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     </body>
 </html>
