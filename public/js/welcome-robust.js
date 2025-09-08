@@ -5,6 +5,9 @@ let socket;
 let visitorMarker;
 let otherVisitorMarkers = {};
 let map;
+let presenceMode = null; // 'socket' ou 'poll'
+let pollIntervals = { post: null, get: null };
+let visitorId = null;
 let currentQuestion = null;
 let attempts = 0;
 let maxAttempts = 5;
@@ -51,6 +54,13 @@ function initMap() {
             navigator.geolocation.getCurrentPosition((position) => {
                 const userLat = position.coords.latitude;
                 const userLng = position.coords.longitude;
+
+                // ID único por sessão para presença HTTP
+                visitorId = sessionStorage.getItem('visitorId');
+                if (!visitorId) {
+                    visitorId = 'v-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+                    sessionStorage.setItem('visitorId', visitorId);
+                }
 
                 function getPseudoReal(lat, lng, minMeters, maxMeters) {
                     const earthRadius = 6371000; // metros
@@ -132,7 +142,7 @@ function initMap() {
                     });
                 });
 
-                // Socket.io (mesma origem via proxy /socket.io)
+                // Socket.io (mesma origem via proxy /socket.io) com fallback HTTP polling
                 try {
                     socket = io({
                         path: '/socket.io',
@@ -140,25 +150,28 @@ function initMap() {
                     });
                     socket.on('connect', () => {
                         console.log('[MapChat] 🔌 Socket conectado:', socket.id);
+                        presenceMode = 'socket';
+                        stopPollingPresence();
                         socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
                     });
                     socket.on('visitorsUpdate', (visitors) => {
-                        Object.values(otherVisitorMarkers).forEach(m => m.setMap(null));
-                        otherVisitorMarkers = {};
-                        visitors.forEach(v => {
-                            if (Math.abs(v.lat - fakeLat) < 1e-9 && Math.abs(v.lng - fakeLng) < 1e-9) return;
-                            const m = new google.maps.Marker({
-                                position: { lat: v.lat, lng: v.lng },
-                                map: map,
-                                icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }
-                            });
-                            otherVisitorMarkers[`${v.lat},${v.lng}`] = m;
-                        });
+                        renderVisitors(visitors, fakeLat, fakeLng);
                     });
-                    socket.on('disconnect', () => console.log('[MapChat] 🔌 Socket desconectado'));
-                    socket.on('connect_error', (e) => console.warn('[MapChat] ⚠️ Erro de conexão Socket.io:', e.message || e));
+                    socket.on('disconnect', () => {
+                        console.log('[MapChat] 🔌 Socket desconectado');
+                        if (presenceMode !== 'poll') {
+                            startPollingPresence(fakeLat, fakeLng);
+                        }
+                    });
+                    socket.on('connect_error', (e) => {
+                        console.warn('[MapChat] ⚠️ Erro de conexão Socket.io:', e.message || e);
+                        if (presenceMode !== 'poll') {
+                            startPollingPresence(fakeLat, fakeLng);
+                        }
+                    });
                 } catch (e) {
                     console.warn('[MapChat] ⚠️ Falha ao inicializar Socket.io:', e);
+                    startPollingPresence(fakeLat, fakeLng);
                 }
             }, (error) => {
                 console.warn('Geolocalização falhou:', error);
@@ -169,6 +182,55 @@ function initMap() {
     } catch (e) {
         console.error('[MapChat] ❌ Erro em initMap:', e);
     }
+}
+
+// Renderiza visitantes azuis no mapa (usado por socket e polling)
+function renderVisitors(visitors, selfLat, selfLng) {
+    Object.values(otherVisitorMarkers).forEach(m => m.setMap(null));
+    otherVisitorMarkers = {};
+    (visitors || []).forEach(v => {
+        if (Math.abs(v.lat - selfLat) < 1e-9 && Math.abs(v.lng - selfLng) < 1e-9) return;
+        const m = new google.maps.Marker({
+            position: { lat: v.lat, lng: v.lng },
+            map: map,
+            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }
+        });
+        otherVisitorMarkers[`${v.lat},${v.lng}`] = m;
+    });
+}
+
+// Fallback: presença via HTTP polling (sem sockets/sem sudo)
+function startPollingPresence(selfLat, selfLng) {
+    if (presenceMode === 'poll') return;
+    presenceMode = 'poll';
+    console.log('[MapChat] � Ativando fallback de presença via HTTP polling');
+
+    // envia posição imediatamente e a cada 10s
+    const postOnce = () => {
+        fetch('/api/user-position', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ id: visitorId, lat: selfLat, lng: selfLng })
+        }).catch(err => console.warn('[MapChat] ⚠️ Falha ao enviar posição:', err));
+    };
+    postOnce();
+    pollIntervals.post = setInterval(postOnce, 10000);
+
+    // busca visitantes imediatamente e a cada 5s
+    const getOnce = () => {
+        fetch('/api/user-positions', { headers: { 'Accept': 'application/json' }})
+            .then(r => r.ok ? r.json() : [])
+            .then(list => renderVisitors(list, selfLat, selfLng))
+            .catch(err => console.warn('[MapChat] ⚠️ Falha ao buscar visitantes:', err));
+    };
+    getOnce();
+    pollIntervals.get = setInterval(getOnce, 5000);
+}
+
+function stopPollingPresence() {
+    if (pollIntervals.post) clearInterval(pollIntervals.post);
+    if (pollIntervals.get) clearInterval(pollIntervals.get);
+    pollIntervals = { post: null, get: null };
 }
 
 
