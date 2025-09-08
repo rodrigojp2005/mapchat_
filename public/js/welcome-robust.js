@@ -132,9 +132,12 @@ function initMap() {
                     });
                 });
 
-                // Socket.io
+                // Socket.io (mesma origem via proxy /socket.io)
                 try {
-                    socket = io('https://mapchat.com.br:3001');
+                    socket = io({
+                        path: '/socket.io',
+                        transports: ['websocket', 'polling']
+                    });
                     socket.on('connect', () => {
                         console.log('[MapChat] 🔌 Socket conectado:', socket.id);
                         socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
@@ -153,7 +156,7 @@ function initMap() {
                         });
                     });
                     socket.on('disconnect', () => console.log('[MapChat] 🔌 Socket desconectado'));
-                    socket.on('connect_error', (e) => console.warn('[MapChat] ⚠️ Erro de conexão Socket.io:', e.message));
+                    socket.on('connect_error', (e) => console.warn('[MapChat] ⚠️ Erro de conexão Socket.io:', e.message || e));
                 } catch (e) {
                     console.warn('[MapChat] ⚠️ Falha ao inicializar Socket.io:', e);
                 }

@@ -31,6 +31,7 @@ io.on('connection', (socket) => {
 });
 
 const PORT = 3001;
-server.listen(PORT, () => {
-    console.log(`Socket.io server rodando na porta ${PORT}`);
+const HOST = '0.0.0.0';
+server.listen(PORT, HOST, () => {
+    console.log(`Socket.io server rodando em ${HOST}:${PORT}`);
 });
