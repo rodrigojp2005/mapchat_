@@ -40,9 +40,7 @@
                 <a href="#sobre" class="text-gray-700 font-medium hover:text-blue-600">Sobre</a>
                 <a href="#como-jogar" class="text-gray-700 font-medium hover:text-blue-600">Como jogar</a>
                 @auth
-                    @if (!request()->is('quiz/create'))
-                        <a href="{{ route('quiz.create') }}" class="bg-green-600 text-white rounded px-4 py-1 font-semibold ml-2 hover:bg-green-700 transition bg-blue-700">Criar Quiz!</a>
-                    @endif
+                    <a href="{{ route('quiz.create') }}" class="bg-green-600 text-blue rounded px-4 py-1 font-semibold ml-2 hover:bg-green-700 transition">Criar Quiz!</a>
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
                         <button type="submit" class="ml-2 bg-gray-200 text-gray-700 rounded px-3 py-1 font-semibold hover:bg-gray-300 transition">Sair</button>
