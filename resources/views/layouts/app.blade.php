@@ -26,22 +26,17 @@
                     @endauth
             <!-- Mobile: cronômetro e nome do usuário -->
                 <div class="flex items-center md:hidden ml-2">
-                    @if (!request()->is('quiz/create'))
                     <div id="timerContainerMobile" class="flex items-center bg-red-50 rounded-lg px-2 py-1 border border-red-200 mr-2">
                         <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDE0OWw4Y3BndHh5Zmpwam12djc5MGRtb3ZocXJqeng0ZThoemE3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/jV0fRmUyDAGRalG0T7/giphy.gif" alt="Timer" class="w-4 h-4 mr-1">
                         <span id="timerMobile" class="font-mono font-bold text-red-600 text-sm pulse-timer">45</span>
                     </div>
-                    @endif
                 </div>
             </div>
             <div class="hidden md:flex items-center space-x-6 pr-2" id="navbarRight">
-                <div id="timerContainer" class="flex items-center bg-red-50 rounded-lg px-3 py-1 border border-red-200">
-                    @if (!request()->is('quiz/create'))
                     <div id="timerContainer" class="flex items-center bg-red-50 rounded-lg px-3 py-1 border border-red-200">
                         <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDE0OWw4Y3BndHh5Zmpwam12djc5MGRtb3ZocXJqeng0ZThoemE3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/jV0fRmUyDAGRalG0T7/giphy.gif" alt="Timer" class="w-5 h-5 mr-2">
                         <span id="timer" class="font-mono font-bold text-red-600 text-lg pulse-timer">45</span>
                     </div>
-                    @endif
                 <a href="#sobre" class="text-gray-700 font-medium hover:text-blue-600">Sobre</a>
                 <a href="#como-jogar" class="text-gray-700 font-medium hover:text-blue-600">Como jogar</a>
                 @auth
