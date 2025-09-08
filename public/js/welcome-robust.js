@@ -4,6 +4,7 @@
 let socket;
 let visitorMarker;
 let otherVisitorMarkers = {};
+let otherVisitorEmojis = {}; // mapa coord->emoji
 let map;
 let presenceMode = null; // 'socket' ou 'poll'
 let pollIntervals = { post: null, get: null };
@@ -253,15 +254,37 @@ function loadNewQuestion() {
 function renderVisitors(visitors, selfLat, selfLng) {
     Object.values(otherVisitorMarkers).forEach(m => m.setMap(null));
     otherVisitorMarkers = {};
+    const pool = ['🟣','🟡','🟢','🔵','🧭','📍','🎯','⭐','🔥','🍀','🌟','🛰️','🚀','🐱','🐶','🐼','🦊','🐧','🐸','🦄','🐵','🦁','🐯','🐨'];
+    const size = 36;
     (visitors || []).forEach(v => {
         if (Math.abs(v.lat - selfLat) < 1e-9 && Math.abs(v.lng - selfLng) < 1e-9) return;
+        const key = `${v.lat},${v.lng}`;
+        if (!otherVisitorEmojis[key]) {
+            otherVisitorEmojis[key] = pool[Math.floor(Math.random() * pool.length)];
+        }
         const m = new google.maps.Marker({
             position: { lat: v.lat, lng: v.lng },
             map: map,
-            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }
+            icon: makeEmojiIcon(otherVisitorEmojis[key], size),
+            title: 'Outro visitante'
         });
-        otherVisitorMarkers[`${v.lat},${v.lng}`] = m;
+        otherVisitorMarkers[key] = m;
     });
+}
+
+// Cria um ícone SVG com um emoji centralizado
+function makeEmojiIcon(emoji, size) {
+    const fontSize = Math.floor(size * 0.8);
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="${fontSize}">${emoji}</text>
+</svg>`;
+    const url = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+    return {
+        url,
+        scaledSize: new google.maps.Size(size, size),
+        anchor: new google.maps.Point(size / 2, size / 2)
+    };
 }
 
 // Fallback: presença via HTTP polling (sem sockets/sem sudo)
