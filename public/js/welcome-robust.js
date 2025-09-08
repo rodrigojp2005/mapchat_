@@ -84,18 +84,27 @@ console.log('%c[MapChat] 📱 Viewport:', 'color: blue;', `${window.innerWidth}x
 function initMap() {
     console.log('%c[MapChat] 🗺️ Inicializando Google Maps', 'color: blue; font-weight: bold;');
     
-    map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 7,
-        center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
-        mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false,
-        gestureHandling: 'greedy' // Permite touch com um dedo
-    });
+    // Inicializa mapa apenas após obter posição
+    function startMapWithPosition(userLat, userLng) {
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 7,
+            center: { lat: userLat, lng: userLng },
+            mapTypeControl: false,
+            fullscreenControl: false,
+            streetViewControl: false,
+            gestureHandling: 'greedy'
+        });
+        console.log('%c[MapChat] ✅ Mapa configurado com gestureHandling: greedy', 'color: green;');
+        setupUserMarker(userLat, userLng);
+        // Adicionar listener para cliques no mapa
+        map.addListener('click', function(e) {
+            console.log('%c[MapChat] 👆 Clique no mapa:', 'color: purple;', e.latLng.lat(), e.latLng.lng());
+            showGuessMarker(e.latLng.lat(), e.latLng.lng());
+        });
+        // Carregar primeira pergunta
+        loadNewQuestion();
+    }
 
-    console.log('%c[MapChat] ✅ Mapa configurado com gestureHandling: greedy', 'color: green;');
-
-    // Geolocalização do visitante
     function getPseudoReal(lat, lng, minMeters, maxMeters) {
         const earthRadius = 6371000; // metros
         let min = minMeters;
@@ -119,23 +128,20 @@ function initMap() {
         let pseudo = getPseudoReal(userLat, userLng, 500, 1000);
         fakeLat = pseudo.lat;
         fakeLng = pseudo.lng;
-        // ...restante do código do marcador, SweetAlert, AJAX, etc...
-        // (copiado do callback original)
-        // ...
     }
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             function(position) {
-                setupUserMarker(position.coords.latitude, position.coords.longitude);
+                startMapWithPosition(position.coords.latitude, position.coords.longitude);
             },
             function(error) {
                 console.warn('Geolocalização falhou:', error);
-                setupUserMarker(-14.2350, -51.9253);
+                startMapWithPosition(-14.2350, -51.9253);
             }
         );
     } else {
-        setupUserMarker(-14.2350, -51.9253);
+        startMapWithPosition(-14.2350, -51.9253);
     }
 
     // ...existing code...
