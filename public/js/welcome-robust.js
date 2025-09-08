@@ -20,7 +20,7 @@ function initMap() {
     console.log('%c[MapChat] 🗺️ Inicializando Google Maps', 'color: blue; font-weight: bold;');
     
     map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 5,
+        zoom: 7,
         center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
         mapTypeControl: false,
         fullscreenControl: false,
@@ -29,6 +29,102 @@ function initMap() {
     });
 
     console.log('%c[MapChat] ✅ Mapa configurado com gestureHandling: greedy', 'color: green;');
+
+    // Geolocalização do visitante
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            // Gerar posição aleatória em raio de 50km
+            const randomRadius = Math.random() * 50; // km
+            const randomAngle = Math.random() * 2 * Math.PI;
+            const earthRadius = 6371; // km
+            const latOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
+            const lngOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(userLat * Math.PI / 180);
+            let fakeLat = userLat + latOffset;
+            let fakeLng = userLng + lngOffset;
+
+            // Precisão inicial
+            let precision = randomRadius;
+            let precisionAdjusted = false;
+
+            // Salvar na sessão se já ajustou precisão
+            if (sessionStorage.getItem('precisionAdjusted')) {
+                precisionAdjusted = true;
+                precision = parseFloat(sessionStorage.getItem('precisionValue')) || precision;
+            }
+
+            // Adicionar marcador customizado
+            const visitorMarker = new google.maps.Marker({
+                position: { lat: fakeLat, lng: fakeLng },
+                map: map,
+                icon: {
+                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                },
+                title: 'Sua posição aproximada'
+            });
+            map.setCenter({ lat: fakeLat, lng: fakeLng });
+
+            // Círculo de precisão
+            let circle = new google.maps.Circle({
+                strokeColor: '#2196f3',
+                strokeOpacity: 0.6,
+                strokeWeight: 2,
+                fillColor: '#90caf9',
+                fillOpacity: 0.25,
+                map: map,
+                center: { lat: fakeLat, lng: fakeLng },
+                radius: precision * 1000 // metros
+            });
+
+            // SweetAlert ao clicar no marcador
+            visitorMarker.addListener('click', function() {
+                let html = `<p>O raio de sua posição está em torno de <b>${Math.round(precision)} km</b> da sua posição real, gerado aleatoriamente.</p>`;
+                html += `<p>Você pode ajustar a precisão para até <b>500 metros</b> apenas uma vez nesta sessão.</p>`;
+                html += `<div style='margin-top:16px;'>
+                    <input type='range' min='0.5' max='50' step='0.1' value='${precision}' id='precSlider' ${precisionAdjusted ? 'disabled' : ''} style='width:100%'>
+                    <div>Precisão: <span id='precValue'>${Math.round(precision * 1000)} m</span></div>
+                </div>`;
+                Swal.fire({
+                    title: 'Sua posição aproximada',
+                    html: html,
+                    confirmButtonText: precisionAdjusted ? 'Fechar' : 'Ajustar precisão',
+                    showCancelButton: !precisionAdjusted,
+                    cancelButtonText: 'Cancelar',
+                    allowOutsideClick: false,
+                    customClass: {popup: 'rounded-lg'},
+                    didOpen: () => {
+                        const slider = Swal.getHtmlContainer().querySelector('#precSlider');
+                        const valueSpan = Swal.getHtmlContainer().querySelector('#precValue');
+                        if (slider && valueSpan) {
+                            slider.addEventListener('input', function() {
+                                valueSpan.textContent = `${Math.round(slider.value * 1000)} m`;
+                            });
+                        }
+                    }
+                }).then((result) => {
+                    if (!precisionAdjusted && result.isConfirmed) {
+                        // Só pode ajustar uma vez
+                        const slider = Swal.getHtmlContainer().querySelector('#precSlider');
+                        if (slider) {
+                            let newPrecision = parseFloat(slider.value);
+                            if (newPrecision < 0.5) newPrecision = 0.5;
+                            if (newPrecision > 50) newPrecision = 50;
+                            precision = newPrecision;
+                            circle.setRadius(precision * 1000);
+                            sessionStorage.setItem('precisionAdjusted', 'true');
+                            sessionStorage.setItem('precisionValue', precision);
+                            precisionAdjusted = true;
+                            Swal.fire('Precisão ajustada!', `Agora o raio é de <b>${Math.round(precision * 1000)} metros</b>.`, 'success');
+                        }
+                    }
+                });
+            });
+        }, function(error) {
+            console.warn('Geolocalização falhou:', error);
+            // Não faz nada, segue fluxo normal
+        });
+    }
 
     // Adicionar listener para cliques no mapa
     map.addListener('click', function(e) {
