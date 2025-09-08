@@ -1,3 +1,9 @@
+// Adicionar cliente Socket.io
+// Certifique-se de incluir o script do Socket.io no HTML:
+// <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+let socket;
+let visitorMarker;
+let otherVisitorMarkers = {};
 let map;
 let currentQuestion = null;
 let attempts = 0;
@@ -13,268 +19,131 @@ console.log('%c[MapChat] 🌍 URL da página:', 'color: blue;', window.location.
 console.log('%c[MapChat] 🔧 User Agent:', 'color: blue;', navigator.userAgent);
 console.log('%c[MapChat] 📱 Viewport:', 'color: blue;', `${window.innerWidth}x${window.innerHeight}`);
 
-// Modo somente API: sem perguntas offline
+// Geolocalização do visitante
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
 
-// Inicializar Google Maps
-function initMap() {
-    console.log('%c[MapChat] 🗺️ Inicializando Google Maps', 'color: blue; font-weight: bold;');
-    
-    map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 7,
-        center: { lat: -14.2350, lng: -51.9253 }, // Centro do Brasil
-        mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false,
-        gestureHandling: 'greedy' // Permite touch com um dedo
-    });
+        // Função para gerar posição pseudo real
+        function getPseudoReal(lat, lng, minMeters, maxMeters) {
+            const earthRadius = 6371000; // metros
+            let min = minMeters;
+            let max = maxMeters;
+            if (max > 5000) min = max - 5000;
+            if (min < 500) min = 500;
+            if (max < min) max = min;
+            const randomRadius = min + Math.random() * (max - min);
+            const randomAngle = Math.random() * 2 * Math.PI;
+            const latOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
+            const lngOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(lat * Math.PI / 180);
+            return {
+                lat: lat + latOffset,
+                lng: lng + lngOffset
+            };
+        }
 
-    console.log('%c[MapChat] ✅ Mapa configurado com gestureHandling: greedy', 'color: green;');
+        // Inicial: sorteia entre 500m e 1km
+        let pseudo = getPseudoReal(userLat, userLng, 500, 1000);
+        let fakeLat = pseudo.lat;
+        let fakeLng = pseudo.lng;
 
-    // Geolocalização do visitante
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            const userLat = position.coords.latitude;
-            const userLng = position.coords.longitude;
+        // Precisão inicial
+        let precision = 0.5;
+        let precisionAdjusted = false;
+        if (sessionStorage.getItem('precisionAdjusted')) {
+            precisionAdjusted = true;
+            precision = parseFloat(sessionStorage.getItem('precisionValue')) || precision;
+        }
 
-            // Gerar posição pseudo real em raio de 500m
-            function getPseudoReal(lat, lng, minMeters, maxMeters) {
-                const earthRadius = 6371000; // metros
-                let min = minMeters;
-                let max = maxMeters;
-                if (max > 5000) {
-                    min = max - 5000;
+        // Adicionar marcador do visitante
+        let visitorMarker = new google.maps.Marker({
+            position: { lat: fakeLat, lng: fakeLng },
+            map: map,
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
+            }
+        });
+
+        // SweetAlert para ajustar precisão
+        visitorMarker.addListener('click', function() {
+            let html = `<p>O raio de sua posição está em torno de <b>${Math.round(precision * 1000)} metros</b> da sua posição pseudo real.</p>`;
+            html += `<input type='range' min='0.5' max='50' step='0.1' value='${precision}' id='precSlider' ${precisionAdjusted ? 'disabled' : ''} style='width:100%'>`;
+            html += `<div>Precisão: <span id='precValue'>${Math.round(precision * 1000)} m</span></div>`;
+            Swal.fire({
+                title: 'Sua posição aproximada',
+                html: html,
+                confirmButtonText: precisionAdjusted ? 'Fechar' : 'Ajustar precisão',
+                showCancelButton: !precisionAdjusted,
+                cancelButtonText: 'Cancelar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    const slider = Swal.getHtmlContainer().querySelector('#precSlider');
+                    const valueSpan = Swal.getHtmlContainer().querySelector('#precValue');
+                    if (slider && valueSpan) {
+                        slider.addEventListener('input', function() {
+                            valueSpan.textContent = `${Math.round(slider.value * 1000)} m`;
+                        });
+                    }
                 }
-                if (min < 500) min = 500;
-                if (max < min) max = min;
-                const randomRadius = min + Math.random() * (max - min);
-                const randomAngle = Math.random() * 2 * Math.PI;
-                const latOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
-                const lngOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(lat * Math.PI / 180);
-                return {
-                    lat: lat + latOffset,
-                    lng: lng + lngOffset
-                };
-            }
-
-            // Inicial: sorteia entre 500m e 5km
-            let pseudo = getPseudoReal(userLat, userLng, 500, 1000);
-            let fakeLat = pseudo.lat;
-            let fakeLng = pseudo.lng;
-
-            // Precisão inicial (raio aleatório até 50km)
-            let precision = 0.5; // inicializa barra em 500m
-            let precisionAdjusted = false;
-
-            if (sessionStorage.getItem('precisionAdjusted')) {
-                precisionAdjusted = true;
-                precision = parseFloat(sessionStorage.getItem('precisionValue')) || precision;
-            }
-
-            // Adicionar marcador customizado do visitante
-            let visitorMarker = new google.maps.Marker({
-                position: { lat: fakeLat, lng: fakeLng },
-                map: map,
-                strokeWeight: 2,
-                fillColor: '#90caf9',
-                fillOpacity: 0.25,
-                center: { lat: fakeLat, lng: fakeLng },
-                radius: precision * 1000 // metros
-            });
-
-            // SweetAlert ao clicar no marcador
-            visitorMarker.addListener('click', function() {
-                let html = `<p>O raio de sua posição está em torno de <b>${Math.round(precision * 1000)} metros</b> da sua posição pseudo real, gerado aleatoriamente.</p>`;
-                html += `<p>Você pode ajustar a precisão para entre <b>500 metros</b> e <b>50 km</b> apenas uma vez nesta sessão. Sua posição nunca será exata.</p>`;
-                html += `<div style='margin-top:16px;'>
-                    <input type='range' min='0.5' max='50' step='0.1' value='${precision}' id='precSlider' ${precisionAdjusted ? 'disabled' : ''} style='width:100%'>
-                    <div>Precisão: <span id='precValue'>${Math.round(precision * 1000)} m</span></div>
-                </div>`;
-                Swal.fire({
-                    title: 'Sua posição aproximada',
-                    html: html,
-                    confirmButtonText: precisionAdjusted ? 'Fechar' : 'Ajustar precisão',
-                    showCancelButton: !precisionAdjusted,
-                    cancelButtonText: 'Cancelar',
-                    allowOutsideClick: false,
-                    customClass: {popup: 'rounded-lg'},
-                    didOpen: () => {
-                        const slider = Swal.getHtmlContainer().querySelector('#precSlider');
-                        const valueSpan = Swal.getHtmlContainer().querySelector('#precValue');
-                        if (slider && valueSpan) {
-                            slider.addEventListener('input', function() {
-                                valueSpan.textContent = `${Math.round(slider.value * 1000)} m`;
-                            });
+            }).then((result) => {
+                if (!precisionAdjusted && result.isConfirmed) {
+                    const slider = Swal.getHtmlContainer().querySelector('#precSlider');
+                    if (slider) {
+                        let newPrecision = parseFloat(slider.value);
+                        if (newPrecision < 0.5) newPrecision = 0.5;
+                        if (newPrecision > 50) newPrecision = 50;
+                        precision = newPrecision;
+                        let minMeters = 500;
+                        let maxMeters = precision * 1000;
+                        if (maxMeters > 5000) minMeters = maxMeters - 5000;
+                        pseudo = getPseudoReal(userLat, userLng, minMeters, maxMeters);
+                        fakeLat = pseudo.lat;
+                        fakeLng = pseudo.lng;
+                        visitorMarker.setPosition({ lat: fakeLat, lng: fakeLng });
+                        map.setCenter({ lat: fakeLat, lng: fakeLng });
+                        sessionStorage.setItem('precisionAdjusted', 'true');
+                        sessionStorage.setItem('precisionValue', precision);
+                        precisionAdjusted = true;
+                        Swal.fire('Precisão ajustada!', `Agora o raio é de <b>${Math.round(precision * 1000)} metros</b>.`, 'success');
+                        // Atualiza posição via socket
+                        if (socket) {
+                            socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
                         }
                     }
-                }).then((result) => {
-                    if (!precisionAdjusted && result.isConfirmed) {
-                        // Só pode ajustar uma vez
-                        const slider = Swal.getHtmlContainer().querySelector('#precSlider');
-                        if (slider) {
-                            let newPrecision = parseFloat(slider.value);
-                            if (newPrecision < 0.5) newPrecision = 0.5;
-                            if (newPrecision > 50) newPrecision = 50;
-                            precision = newPrecision;
-                            let minMeters = 500;
-                            let maxMeters = precision * 1000;
-                            if (maxMeters > 5000) {
-                                minMeters = maxMeters - 5000;
-                            }
-                            pseudo = getPseudoReal(userLat, userLng, minMeters, maxMeters);
-                            fakeLat = pseudo.lat;
-                            fakeLng = pseudo.lng;
-                            visitorMarker.setPosition({ lat: fakeLat, lng: fakeLng });
-                            map.setCenter({ lat: fakeLat, lng: fakeLng });
-                            sessionStorage.setItem('precisionAdjusted', 'true');
-                            sessionStorage.setItem('precisionValue', precision);
-                            precisionAdjusted = true;
-                            Swal.fire('Precisão ajustada!', `Agora o raio é de <b>${Math.round(precision * 1000)} metros</b> em torno de sua posição pseudo real.`, 'success');
-                        }
-                    }
-                });
+                }
             });
+        });
 
-            // Após obter a posição, buscar usuários e exibir no mapa
-            fetch('/api/public-users')
-                .then(response => response.json())
-                .then(users => {
-                    users.forEach(user => {
-                        // Não mostrar o visitante como outro usuário
-                        if (user.latitude && user.longitude) {
-                            new google.maps.Marker({
-                                position: { lat: user.latitude, lng: user.longitude },
-                                map: map,
-                                title: user.name,
-                                icon: {
-                                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                                }
-                            });
+        // Inicializa Socket.io e envia posição
+        socket = io('http://localhost:3001');
+        socket.on('connect', () => {
+            socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
+        });
+
+        // Recebe atualização de visitantes
+        socket.on('visitorsUpdate', (visitors) => {
+            // Remove marcadores antigos
+            Object.values(otherVisitorMarkers).forEach(marker => marker.setMap(null));
+            otherVisitorMarkers = {};
+            // Adiciona marcadores dos outros visitantes
+            visitors.forEach(v => {
+                if (v.lat !== fakeLat || v.lng !== fakeLng) {
+                    const marker = new google.maps.Marker({
+                        position: { lat: v.lat, lng: v.lng },
+                        map: map,
+                        icon: {
+                            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
                         }
                     });
-                })
-                .catch(err => {
-                    console.error('[MapChat] Erro ao buscar usuários:', err);
-                });
-        }, function(error) {
-            console.warn('Geolocalização falhou:', error);
-            // Não faz nada, segue fluxo normal
-        });
-    }
-
-    // Adicionar listener para cliques no mapa
-    map.addListener('click', function(e) {
-        console.log('%c[MapChat] 👆 Clique no mapa:', 'color: purple;', e.latLng.lat(), e.latLng.lng());
-        showGuessMarker(e.latLng.lat(), e.latLng.lng());
-    });
-
-    // Carregar primeira pergunta
-    loadNewQuestion();
-}
-
-// Função para carregar nova pergunta do array local
-function loadNewQuestion() {
-    console.log('[MapChat] 🟠 CARREGANDO NOVA PERGUNTA...');
-    clearMap();
-    if (!window.perguntas || window.perguntas.length === 0) {
-        Swal.fire({
-            icon: 'info',
-                title: 'Sem perguntas disponíveis',
-                html: 'Não há perguntas cadastradas no banco.<br>Adicione perguntas ou tente novamente mais tarde.',
-                confirmButtonText: 'Recarregar',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                customClass: {popup: 'rounded-lg'},
-                preConfirm: () => { window.location.reload(); }
+                    otherVisitorMarkers[`${v.lat},${v.lng}`] = marker;
+                }
             });
-            console.error('[MapChat] ❌ NENHUMA PERGUNTA CARREGADA!');
-            return;
-        }
-        // Seleciona aleatoriamente uma pergunta
-        const idx = Math.floor(Math.random() * window.perguntas.length);
-        currentQuestion = window.perguntas[idx];
-    // reset attempts and timer for each new question
-    attempts = 0;
-    updateAttemptsDisplay();
-    resetTimer();
-    updateQuestionDisplay();
-    }
-
-// Modo offline removido
-
-// Atualizar display da pergunta
-function updateQuestionDisplay() {
-    console.log('%c[MapChat] 📝 ATUALIZANDO DISPLAY', 'color: blue;');
-    console.log('[MapChat] ❓ Pergunta para exibir:', currentQuestion);
-    
-    if (!currentQuestion) {
-        console.error('[MapChat] ❌ Nenhuma pergunta para exibir!');
-        return;
-    }
-    
-    const questionElement = document.getElementById('question-text');
-    const categoryElement = document.getElementById('category');
-    
-    console.log('[MapChat] 🎯 Elementos DOM:', {
-        questionElement: !!questionElement,
-        categoryElement: !!categoryElement
+        });
+    }, function(error) {
+        console.warn('Geolocalização falhou:', error);
+        // Não faz nada, segue fluxo normal
     });
-    
-    if (questionElement) {
-        questionElement.textContent = currentQuestion.question_text;
-        console.log('[MapChat] ✅ Texto da pergunta atualizado');
-    } else {
-        console.error('[MapChat] ❌ Elemento question-text não encontrado!');
-    }
-    
-    if (categoryElement) {
-        categoryElement.textContent = currentQuestion.category || 'Geografia';
-        console.log('[MapChat] ✅ Categoria atualizada');
-    } else {
-        console.error('[MapChat] ❌ Elemento category não encontrado!');
-    }
-    
-    // Mostrar nome do criador embaixo da pergunta
-    const creatorName = currentQuestion.user_name || 'Admin MapChat';
-    let creatorElement = document.getElementById('question-creator');
-    
-    if (!creatorElement) {
-        // Criar elemento se não existir
-        creatorElement = document.createElement('div');
-        creatorElement.id = 'question-creator';
-        creatorElement.className = 'text-xs text-gray-500 mt-1';
-        document.getElementById('question-container').appendChild(creatorElement);
-        console.log('[MapChat] ✅ Elemento criador criado');
-    }
-    
-    creatorElement.innerHTML = `📝 Criada por: <strong>${creatorName}</strong>`;
-    console.log('[MapChat] ✅ Nome do criador atualizado:', creatorName);
-    
-    // Mostrar indicador do modo
-    const modeIndicator = gameMode === 'api' ? '🌐 Online' : '📱 Offline';
-    console.log('[MapChat] 🔧 Modo do jogo:', modeIndicator);
-    
-    /*
-    const modeElement = document.getElementById('game-mode');
-    if (modeElement) {
-        modeElement.textContent = modeIndicator;
-        console.log('[MapChat] ✅ Indicador de modo atualizado');
-    } else {
-        // Criar elemento se não existir
-        console.log('[MapChat] 🔧 Criando elemento de modo...');
-        const newModeElement = document.createElement('div');
-        newModeElement.id = 'game-mode';
-        newModeElement.className = 'text-xs text-gray-400 mt-1';
-        newModeElement.textContent = modeIndicator;
-        
-        const container = document.getElementById('question-container');
-        if (container) {
-            container.appendChild(newModeElement);
-            console.log('[MapChat] ✅ Elemento de modo criado e adicionado');
-        } else {
-            console.error('[MapChat] ❌ Container question-container não encontrado!');
-        }
-    }
-    */
 }
 
 // Fazer palpite
@@ -639,6 +508,132 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Geolocalização do visitante
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        // Função para gerar posição pseudo real
+        function getPseudoReal(lat, lng, minMeters, maxMeters) {
+            const earthRadius = 6371000; // metros
+            let min = minMeters;
+            let max = maxMeters;
+            if (max > 5000) min = max - 5000;
+            if (min < 500) min = 500;
+            if (max < min) max = min;
+            const randomRadius = min + Math.random() * (max - min);
+            const randomAngle = Math.random() * 2 * Math.PI;
+            const latOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
+            const lngOffset = (randomRadius / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(lat * Math.PI / 180);
+            return {
+                lat: lat + latOffset,
+                lng: lng + lngOffset
+            };
+        }
+
+        // Inicial: sorteia entre 500m e 1km
+        let pseudo = getPseudoReal(userLat, userLng, 500, 1000);
+        let fakeLat = pseudo.lat;
+        let fakeLng = pseudo.lng;
+
+        // Precisão inicial
+        let precision = 0.5;
+        let precisionAdjusted = false;
+        if (sessionStorage.getItem('precisionAdjusted')) {
+            precisionAdjusted = true;
+            precision = parseFloat(sessionStorage.getItem('precisionValue')) || precision;
+        }
+
+        // Adicionar marcador do visitante
+        let visitorMarker = new google.maps.Marker({
+            position: { lat: fakeLat, lng: fakeLng },
+            map: map,
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
+            }
+        });
+
+        // SweetAlert para ajustar precisão
+        visitorMarker.addListener('click', function() {
+            let html = `<p>O raio de sua posição está em torno de <b>${Math.round(precision * 1000)} metros</b> da sua posição pseudo real.</p>`;
+            html += `<input type='range' min='0.5' max='50' step='0.1' value='${precision}' id='precSlider' ${precisionAdjusted ? 'disabled' : ''} style='width:100%'>`;
+            html += `<div>Precisão: <span id='precValue'>${Math.round(precision * 1000)} m</span></div>`;
+            Swal.fire({
+                title: 'Sua posição aproximada',
+                html: html,
+                confirmButtonText: precisionAdjusted ? 'Fechar' : 'Ajustar precisão',
+                showCancelButton: !precisionAdjusted,
+                cancelButtonText: 'Cancelar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    const slider = Swal.getHtmlContainer().querySelector('#precSlider');
+                    const valueSpan = Swal.getHtmlContainer().querySelector('#precValue');
+                    if (slider && valueSpan) {
+                        slider.addEventListener('input', function() {
+                            valueSpan.textContent = `${Math.round(slider.value * 1000)} m`;
+                        });
+                    }
+                }
+            }).then((result) => {
+                if (!precisionAdjusted && result.isConfirmed) {
+                    const slider = Swal.getHtmlContainer().querySelector('#precSlider');
+                    if (slider) {
+                        let newPrecision = parseFloat(slider.value);
+                        if (newPrecision < 0.5) newPrecision = 0.5;
+                        if (newPrecision > 50) newPrecision = 50;
+                        precision = newPrecision;
+                        let minMeters = 500;
+                        let maxMeters = precision * 1000;
+                        if (maxMeters > 5000) minMeters = maxMeters - 5000;
+                        pseudo = getPseudoReal(userLat, userLng, minMeters, maxMeters);
+                        fakeLat = pseudo.lat;
+                        fakeLng = pseudo.lng;
+                        visitorMarker.setPosition({ lat: fakeLat, lng: fakeLng });
+                        map.setCenter({ lat: fakeLat, lng: fakeLng });
+                        sessionStorage.setItem('precisionAdjusted', 'true');
+                        sessionStorage.setItem('precisionValue', precision);
+                        precisionAdjusted = true;
+                        Swal.fire('Precisão ajustada!', `Agora o raio é de <b>${Math.round(precision * 1000)} metros</b>.`, 'success');
+                        // Atualiza posição via socket
+                        if (socket) {
+                            socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
+                        }
+                    }
+                }
+            });
+        });
+
+        // Inicializa Socket.io e envia posição
+        socket = io('http://localhost:3001');
+        socket.on('connect', () => {
+            socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
+        });
+
+        // Recebe atualização de visitantes
+        socket.on('visitorsUpdate', (visitors) => {
+            // Remove marcadores antigos
+            Object.values(otherVisitorMarkers).forEach(marker => marker.setMap(null));
+            otherVisitorMarkers = {};
+            // Adiciona marcadores dos outros visitantes
+            visitors.forEach(v => {
+                if (v.lat !== fakeLat || v.lng !== fakeLng) {
+                    const marker = new google.maps.Marker({
+                        position: { lat: v.lat, lng: v.lng },
+                        map: map,
+                        icon: {
+                            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                        }
+                    });
+                    otherVisitorMarkers[`${v.lat},${v.lng}`] = marker;
+                }
+            });
+        });
+    }, function(error) {
+        console.warn('Geolocalização falhou:', error);
+        // Não faz nada, segue fluxo normal
+    });
+}
 
 console.log('%c[MapChat] 📜 FINAL DO SCRIPT ALCANÇADO', 'color: purple; font-size: 14px;');
 console.log('[MapChat] 🧪 window.perguntas:', window.perguntas);
