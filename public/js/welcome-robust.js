@@ -35,6 +35,7 @@ function initMap() {
         navigator.geolocation.getCurrentPosition(function(position) {
             const userLat = position.coords.latitude;
             const userLng = position.coords.longitude;
+
             // Gerar posição pseudo real em raio de 500m
             function getPseudoReal(lat, lng, minMeters, maxMeters) {
                 const earthRadius = 6371000; // metros
@@ -69,14 +70,13 @@ function initMap() {
                 precision = parseFloat(sessionStorage.getItem('precisionValue')) || precision;
             }
 
-            // Adicionar marcador customizado
+            // Adicionar marcador customizado do visitante
             let visitorMarker = new google.maps.Marker({
                 position: { lat: fakeLat, lng: fakeLng },
                 map: map,
                 strokeWeight: 2,
                 fillColor: '#90caf9',
                 fillOpacity: 0.25,
-                map: map,
                 center: { lat: fakeLat, lng: fakeLng },
                 radius: precision * 1000 // metros
             });
@@ -133,6 +133,28 @@ function initMap() {
                     }
                 });
             });
+
+            // Após obter a posição, buscar usuários e exibir no mapa
+            fetch('/api/public-users')
+                .then(response => response.json())
+                .then(users => {
+                    users.forEach(user => {
+                        // Não mostrar o visitante como outro usuário
+                        if (user.latitude && user.longitude) {
+                            new google.maps.Marker({
+                                position: { lat: user.latitude, lng: user.longitude },
+                                map: map,
+                                title: user.name,
+                                icon: {
+                                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                                }
+                            });
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.error('[MapChat] Erro ao buscar usuários:', err);
+                });
         }, function(error) {
             console.warn('Geolocalização falhou:', error);
             // Não faz nada, segue fluxo normal
