@@ -184,6 +184,71 @@ function initMap() {
     }
 }
 
+// Carrega uma nova pergunta e atualiza a UI
+function loadNewQuestion() {
+    try {
+        console.log('%c[MapChat] 🧠 Carregando NOVA PERGUNTA', 'color: blue; font-weight: bold;');
+        clearMap();
+        resetAttempts();
+
+        const questionElement = document.getElementById('question-text');
+        const categoryElement = document.getElementById('category');
+        const hintElement = document.getElementById('hint');
+
+        // Preferir perguntas pré-carregadas (sem depender de API)
+        if (Array.isArray(window.perguntas) && window.perguntas.length > 0) {
+            const idx = Math.floor(Math.random() * window.perguntas.length);
+            currentQuestion = window.perguntas[idx];
+            gameMode = 'offline';
+            console.log('[MapChat] 🎲 Selecionada pergunta local:', currentQuestion);
+            if (questionElement) questionElement.textContent = currentQuestion.question_text || 'Pergunta';
+            if (categoryElement) categoryElement.textContent = currentQuestion.category || 'Geografia';
+            if (hintElement) {
+                hintElement.classList.remove('hidden');
+                const creator = currentQuestion.user_name || 'anônimo';
+                hintElement.innerHTML = `<b>Pergunta criada:</b> ${creator}`;
+            }
+            if (typeof startTimer === 'function') startTimer();
+            return;
+        }
+
+        // Fallback: buscar da API
+        console.log('[MapChat] 🌐 Buscando pergunta via API...');
+        fetch('/api/question/random', { headers: { 'Accept': 'application/json' }})
+            .then(async (r) => {
+                const text = await r.text();
+                try {
+                    return { ok: r.ok, status: r.status, data: JSON.parse(text) };
+                } catch (e) {
+                    console.error('[MapChat] ❌ API random respondeu texto não-JSON:', text);
+                    throw new Error('Resposta inválida da API');
+                }
+            })
+            .then(({ ok, status, data }) => {
+                if (!ok) throw new Error(`API /question/random ${status}`);
+                currentQuestion = data;
+                // Se API indicou modo quiz, não usamos a rota de guess (offline)
+                gameMode = (data && data.debug && data.debug.mode === 'api') ? 'api' : 'offline';
+                console.log('[MapChat] ✅ Pergunta da API:', currentQuestion, 'mode=', gameMode);
+                if (questionElement) questionElement.textContent = currentQuestion.question_text || 'Pergunta';
+                if (categoryElement) categoryElement.textContent = currentQuestion.category || 'Geografia';
+                if (hintElement) {
+                    hintElement.classList.remove('hidden');
+                    const creator = currentQuestion.user_name || 'anônimo';
+                    hintElement.innerHTML = `<b>Pergunta criada:</b> ${creator}`;
+                }
+                if (typeof startTimer === 'function') startTimer();
+            })
+            .catch((err) => {
+                console.error('[MapChat] ❌ Falha ao carregar pergunta:', err);
+                if (questionElement) questionElement.textContent = 'Sem perguntas disponíveis agora';
+                if (categoryElement) categoryElement.textContent = '—';
+            });
+    } catch (e) {
+        console.error('[MapChat] ❌ Erro em loadNewQuestion:', e);
+    }
+}
+
 // Renderiza visitantes azuis no mapa (usado por socket e polling)
 function renderVisitors(visitors, selfLat, selfLng) {
     Object.values(otherVisitorMarkers).forEach(m => m.setMap(null));
@@ -587,6 +652,8 @@ window.onload = function() {
         category: !!categoryElement,
         mapDimensions: mapElement ? `${mapElement.offsetWidth}x${mapElement.offsetHeight}` : 'N/A'
     });
+    // Carregar primeira pergunta
+    loadNewQuestion();
 };
 
 
