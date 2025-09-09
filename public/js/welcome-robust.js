@@ -6,6 +6,8 @@ let map;
 let presenceMode = null; // apenas 'poll'
 let pollIntervals = { post: null, get: null };
 let visitorId = null;
+let selfLat = null; // última latitude pseudo-real do próprio usuário
+let selfLng = null; // última longitude pseudo-real do próprio usuário
 let currentQuestion = null;
 let attempts = 0;
 let maxAttempts = 5;
@@ -92,6 +94,9 @@ function initMap() {
                     icon: { url: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png' }
                 });
                 map.setCenter({ lat: fakeLat, lng: fakeLng });
+                // guarda posição própria globalmente
+                selfLat = fakeLat;
+                selfLng = fakeLng;
 
                 // Ajuste de precisão
                 visitorMarker.addListener('click', function () {
@@ -130,18 +135,21 @@ function initMap() {
                                 fakeLng = pseudo.lng;
                                 visitorMarker.setPosition({ lat: fakeLat, lng: fakeLng });
                                 map.setCenter({ lat: fakeLat, lng: fakeLng });
+                                // atualiza globais e envia presença imediatamente
+                                selfLat = fakeLat;
+                                selfLng = fakeLng;
+                                sendPositionNow();
                                 sessionStorage.setItem('precisionAdjusted', 'true');
                                 sessionStorage.setItem('precisionValue', precision);
                                 precisionAdjusted = true;
                                 Swal.fire('Precisão ajustada!', `Agora o raio é de <b>${Math.round(precision * 1000)} metros</b>.`, 'success');
-                                if (socket) socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
                             }
                         }
                     });
                 });
 
-                // Inicia presença por HTTP polling
-                startPollingPresence(fakeLat, fakeLng);
+                // Inicia presença por HTTP polling usando globais
+                startPollingPresence();
             }, (error) => {
                 console.warn('Geolocalização falhou:', error);
             });
@@ -255,19 +263,25 @@ function makeEmojiIcon(emoji, size) {
     };
 }
 
+// Envia a posição atual imediatamente
+function sendPositionNow() {
+    if (selfLat == null || selfLng == null || !visitorId) return;
+    fetch('/api/user-position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ id: visitorId, lat: selfLat, lng: selfLng })
+    }).catch(err => console.warn('[MapChat] ⚠️ Falha ao enviar posição imediata:', err));
+}
+
 // Presença via HTTP polling (sem sockets)
-function startPollingPresence(selfLat, selfLng) {
+function startPollingPresence() {
     if (presenceMode === 'poll') return;
     presenceMode = 'poll';
     console.log('[MapChat] 🔄 Presença via HTTP polling');
 
     // envia posição imediatamente e a cada 10s
     const postOnce = () => {
-        fetch('/api/user-position', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ id: visitorId, lat: selfLat, lng: selfLng })
-        }).catch(err => console.warn('[MapChat] ⚠️ Falha ao enviar posição:', err));
+        sendPositionNow();
     };
     postOnce();
     pollIntervals.post = setInterval(postOnce, 10000);
