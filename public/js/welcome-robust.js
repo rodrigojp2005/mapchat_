@@ -1,12 +1,9 @@
-// Adicionar cliente Socket.io
-// Certifique-se de incluir o script do Socket.io no HTML:
-// <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-let socket;
+// Presença sem WebSocket: apenas HTTP polling
 let visitorMarker;
 let otherVisitorMarkers = {};
 let otherVisitorEmojis = {}; // mapa coord->emoji
 let map;
-let presenceMode = null; // 'socket' ou 'poll'
+let presenceMode = null; // apenas 'poll'
 let pollIntervals = { post: null, get: null };
 let visitorId = null;
 let currentQuestion = null;
@@ -23,7 +20,7 @@ console.log('%c[MapChat] 🌍 URL da página:', 'color: blue;', window.location.
 console.log('%c[MapChat] 🔧 User Agent:', 'color: blue;', navigator.userAgent);
 console.log('%c[MapChat] 📱 Viewport:', 'color: blue;', `${window.innerWidth}x${window.innerHeight}`);
 
-// Inicializa Google Maps, geolocalização e Socket.io
+// Inicializa Google Maps, geolocalização e presença
 function initMap() {
     try {
         console.log('%c[MapChat] 🗺️ initMap chamado', 'color: blue; font-weight: bold;');
@@ -50,7 +47,7 @@ function initMap() {
             }
         });
 
-        // Geolocalização do visitante e broadcast via Socket.io
+    // Geolocalização do visitante e presença via HTTP polling
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((position) => {
                 const userLat = position.coords.latitude;
@@ -143,37 +140,8 @@ function initMap() {
                     });
                 });
 
-                // Socket.io (mesma origem via proxy /socket.io) com fallback HTTP polling
-                try {
-                    socket = io({
-                        path: '/socket.io',
-                        transports: ['websocket', 'polling']
-                    });
-                    socket.on('connect', () => {
-                        console.log('[MapChat] 🔌 Socket conectado:', socket.id);
-                        presenceMode = 'socket';
-                        stopPollingPresence();
-                        socket.emit('visitorPosition', { lat: fakeLat, lng: fakeLng });
-                    });
-                    socket.on('visitorsUpdate', (visitors) => {
-                        renderVisitors(visitors, fakeLat, fakeLng);
-                    });
-                    socket.on('disconnect', () => {
-                        console.log('[MapChat] 🔌 Socket desconectado');
-                        if (presenceMode !== 'poll') {
-                            startPollingPresence(fakeLat, fakeLng);
-                        }
-                    });
-                    socket.on('connect_error', (e) => {
-                        console.warn('[MapChat] ⚠️ Erro de conexão Socket.io:', e.message || e);
-                        if (presenceMode !== 'poll') {
-                            startPollingPresence(fakeLat, fakeLng);
-                        }
-                    });
-                } catch (e) {
-                    console.warn('[MapChat] ⚠️ Falha ao inicializar Socket.io:', e);
-                    startPollingPresence(fakeLat, fakeLng);
-                }
+                // Inicia presença por HTTP polling
+                startPollingPresence(fakeLat, fakeLng);
             }, (error) => {
                 console.warn('Geolocalização falhou:', error);
             });
@@ -287,11 +255,11 @@ function makeEmojiIcon(emoji, size) {
     };
 }
 
-// Fallback: presença via HTTP polling (sem sockets/sem sudo)
+// Presença via HTTP polling (sem sockets)
 function startPollingPresence(selfLat, selfLng) {
     if (presenceMode === 'poll') return;
     presenceMode = 'poll';
-    console.log('[MapChat] � Ativando fallback de presença via HTTP polling');
+    console.log('[MapChat] 🔄 Presença via HTTP polling');
 
     // envia posição imediatamente e a cada 10s
     const postOnce = () => {
